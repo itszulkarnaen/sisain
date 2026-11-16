@@ -29,14 +29,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     month: 'short',
   }).format(new Date());
 
+  // Ambil nama depan / panggilan agar rapi 1 baris dan tidak wrap jika nama kepanjangan
+  const firstName = userName.trim().split(' ')[0] || userName;
+  const displayName = firstName.length > 14 ? `${firstName.slice(0, 12)}...` : firstName;
+
   return (
-    <header className="flex items-center justify-between px-4 pt-4 pb-3">
+    <header className="flex items-center justify-between px-4 pt-3 pb-3">
       {/* User Info */}
       <div
-        className="flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-98 transition group select-none"
+        className="flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-98 transition group select-none min-w-0"
         onClick={onAvatarClick}
       >
-        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#7e7ef1]/20 to-[#a0dafd]/30 border border-[#7e7ef1]/30 shadow-sm flex items-center justify-center text-lg select-none group-hover:border-[#7e7ef1] transition">
+        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#7e7ef1]/20 to-[#a0dafd]/30 border border-[#7e7ef1]/30 shadow-sm flex items-center justify-center text-lg select-none group-hover:border-[#7e7ef1] transition shrink-0">
           <Image
             src={avatarUrl || '/pics/boy.png'}
             alt={userName}
@@ -46,9 +50,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             className="w-full h-full object-cover"
           />
         </div>
-        <div>
-          <p className="text-xs font-medium text-slate-500">{displayDate}</p>
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight">Halo, {userName}</h1>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-500 truncate">{displayDate}</p>
+          <h1
+            className="text-lg font-bold text-slate-900 tracking-tight truncate max-w-[145px] sm:max-w-[200px]"
+            title={userName}
+          >
+            Halo, {displayName}
+          </h1>
         </div>
       </div>
 

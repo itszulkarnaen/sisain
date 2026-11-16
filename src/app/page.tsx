@@ -804,8 +804,8 @@ export default function Home() {
       {/* Desktop Notice Banner */}
       <DesktopNoticeBanner />
 
-      {/* Mobile-First Frame Container (iPhone 14/15 size max-w-md) */}
-      <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col relative overflow-hidden">
+      {/* Mobile-First Frame Container (iPhone 14/15 size max-w-md) with iOS Safe-Area support */}
+      <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col relative overflow-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
         
         {/* Top Header */}
         <TopHeader

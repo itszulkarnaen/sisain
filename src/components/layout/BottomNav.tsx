@@ -18,7 +18,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onOpenAddModal,
 }) => {
   return (
-    <div className="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 pointer-events-none z-40">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-0 right-0 max-w-md mx-auto px-4 pointer-events-none z-40">
       <div className="relative bg-white/95 backdrop-blur-md rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 flex items-center justify-between px-3 py-2 pointer-events-auto">
         {/* Home */}
         <button

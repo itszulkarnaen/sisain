@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Pencil, Calendar, Check, Trash2 } from 'lucide-react';
-import { Numpad } from './Numpad';
 import { Category, Transaction, TransactionType } from '@/types';
 import { formatNumberOnly, formatRupiah } from '@/lib/utils/currency';
 import { clsx } from 'clsx';
@@ -68,24 +67,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   }, [isOpen, editingTransaction, categories]);
 
   if (!isOpen) return null;
-
-  const handleDigitPress = (digit: string) => {
-    if (amountStr === '0') {
-      if (digit === '000' || digit === '0') return;
-      setAmountStr(digit);
-    } else {
-      if (amountStr.length >= 10) return; // Limit length
-      setAmountStr((prev) => prev + digit);
-    }
-  };
-
-  const handleBackspace = () => {
-    if (amountStr.length <= 1) {
-      setAmountStr('0');
-    } else {
-      setAmountStr((prev) => prev.slice(0, -1));
-    }
-  };
 
   const numericAmount = parseInt(amountStr, 10) || 0;
 
@@ -185,12 +166,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
         </div>
 
-        {/* Big Amount Display */}
-        <div className="flex items-center justify-center py-2.5 px-4 rounded-2xl bg-[#a0dafd]/15 border border-[#a0dafd]/30 my-1">
-          <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Rp{formatNumberOnly(numericAmount)}
-          </span>
-          <span className="w-0.5 h-8 bg-[#7e7ef1] ml-1 animate-pulse" />
+        {/* Big Amount Display with Native Device Keyboard */}
+        <div className="flex items-center justify-center py-2.5 px-4 rounded-2xl bg-[#a0dafd]/15 border border-[#a0dafd]/30 my-1 focus-within:border-[#7e7ef1] focus-within:ring-2 focus-within:ring-[#7e7ef1]/20 transition-all">
+          <span className="text-2xl font-black text-[#7e7ef1] mr-1.5 select-none">Rp</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={numericAmount > 0 ? formatNumberOnly(numericAmount) : ''}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '');
+              const cleanDigits = digits.replace(/^0+/, '') || '0';
+              if (cleanDigits.length <= 11) {
+                setAmountStr(cleanDigits);
+              }
+            }}
+            placeholder="0"
+            className="w-full text-center text-3xl font-extrabold text-slate-900 tracking-tight bg-transparent outline-hidden selection:bg-[#7e7ef1]/30 placeholder:text-slate-400"
+            autoFocus
+          />
         </div>
 
         {/* Type Toggle: [ Pengeluaran ] [ Pemasukan ] */}
@@ -282,11 +275,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </button>
             );
           })}
-        </div>
-
-        {/* Numpad */}
-        <div className="mb-4">
-          <Numpad onDigitPress={handleDigitPress} onBackspace={handleBackspace} />
         </div>
 
         {/* Action Buttons: Delete & Submit */}

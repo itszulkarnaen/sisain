@@ -304,9 +304,16 @@ export default function LoginPage() {
         </div>
 
         {/* Footer: Guest Mode */}
-        <div className="relative z-10 text-center pb-2">
-          <p className="text-[10px] text-slate-400 mt-2">
-                &copy; 2026 sisa.in &bull; Dibuat untuk pekerja 9-to-5 mengelola keuangan dengan bijak.
+        <div className="relative z-10 text-center pb-2 space-y-2">
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition underline underline-offset-4"
+          >
+            Masuk sebagai Tamu (Offline Mode)
+          </button>
+          <p className="text-[10px] text-slate-400">
+            &copy; 2026 sisa.in &bull; Dibuat untuk pekerja 9-to-5 mengelola keuangan dengan bijak.
           </p>
         </div>
 
