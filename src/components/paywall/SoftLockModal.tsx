@@ -27,9 +27,6 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
   subscriptionEndsAt,
   userEmail = 'user@sisa.in',
   adminWaNumber = '6281234567890',
-  bcaNumber = '1234567890',
-  bcaName = 'Zul',
-  ewalletNumber = '08123456789',
 }) => {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
@@ -53,7 +50,7 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in">
         <div className="fixed inset-0" onClick={onClose} />
 
-        <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl z-10 px-5 pt-3 pb-6 flex flex-col max-h-[92vh] overflow-y-auto">
+        <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl z-10 px-5 pt-3 pb-6 flex flex-col max-h-[99vh] overflow-y-auto">
           {/* Handle */}
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3" />
 
@@ -110,7 +107,7 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
                   <Crown className="w-6 h-6 fill-yellow-300 text-yellow-400" />
                 </div>
                 <h2 className="text-sm font-semibold text-[#7e7ef1]">
-                  Keuntungan Paket Sultan 👑
+                  Keuntungan Paket Sultan
                 </h2>
                 <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
                   Upgrade ke sisa.in Sultan
@@ -124,7 +121,7 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
 
           {/* Benefit Card */}
           <div className="rounded-2xl border border-[#a0dafd]/40 bg-[#7e7ef1]/5 overflow-hidden mb-4 shadow-xs">
-            <div className="bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] px-4 py-2 text-white text-xs font-bold text-center border-b border-[#a0dafd]/30">
+            <div className="bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] px-4 py-6 text-white text-xs font-bold text-center border-b border-[#a0dafd]/30">
               Langganan Sultan — Hanya Rp10.000 / bulan
             </div>
             <div className="p-4 space-y-2.5">
@@ -185,23 +182,6 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
               <p className="text-[10px] text-slate-400">
                 Screenshot atau scan langsung nominal <span className="font-bold text-slate-700">Rp10.000</span>.
               </p>
-            </div>
-
-            {/* Alternative Rekening Transfer Manual */}
-            <div className="p-3 bg-white rounded-2xl border border-slate-200/80 text-xs text-slate-700 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-                Atau Transfer Manual:
-              </span>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-extrabold text-slate-900">BCA: {bcaNumber}</p>
-                  <p className="text-[11px] text-slate-500">a/n {bcaName}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-semibold text-slate-400">E-Wallet (GoPay/Dana/OVO):</p>
-                  <p className="font-extrabold text-slate-800">{ewalletNumber}</p>
-                </div>
-              </div>
             </div>
           </div>
 
