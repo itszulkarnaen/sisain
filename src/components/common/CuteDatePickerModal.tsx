@@ -24,6 +24,9 @@ interface CuteDatePickerModalProps {
   selectedDate: string; // YYYY-MM-DD
   title?: string;
   subtitle?: string;
+  minDate?: string; // YYYY-MM-DD
+  maxDate?: string; // YYYY-MM-DD
+  lockedMonth?: Date;
   onSelectDate: (dateStr: string) => void;
   onClose: () => void;
 }
@@ -33,10 +36,14 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
   selectedDate,
   title = 'Pilih Tanggal',
   subtitle = 'Klik tanggal transaksi',
+  minDate,
+  maxDate,
+  lockedMonth,
   onSelectDate,
   onClose,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
+    if (lockedMonth) return lockedMonth;
     try {
       return selectedDate ? parseISO(selectedDate) : new Date();
     } catch {
@@ -46,6 +53,10 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      if (lockedMonth) {
+        setCurrentMonth(lockedMonth);
+        return;
+      }
       try {
         const parsed = selectedDate ? parseISO(selectedDate) : new Date();
         setCurrentMonth(parsed);
@@ -53,7 +64,7 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
         setCurrentMonth(new Date());
       }
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, selectedDate, lockedMonth]);
 
   if (!isOpen) return null;
 
@@ -106,27 +117,35 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
         </div>
 
         {/* Month Navigator */}
-        <div className="flex items-center justify-between mb-3 px-1">
-          <button
-            type="button"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#a0dafd]/30 text-slate-700 flex items-center justify-center transition active:scale-95"
-            title="Bulan sebelumnya"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-xs font-extrabold text-slate-900 capitalize">
-            {format(currentMonth, 'MMMM yyyy', { locale: id })}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#a0dafd]/30 text-slate-700 flex items-center justify-center transition active:scale-95"
-            title="Bulan berikutnya"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+        {!lockedMonth ? (
+          <div className="flex items-center justify-between mb-3 px-1">
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#a0dafd]/30 text-slate-700 flex items-center justify-center transition active:scale-95"
+              title="Bulan sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-extrabold text-slate-900 capitalize">
+              {format(currentMonth, 'MMMM yyyy', { locale: id })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#a0dafd]/30 text-slate-700 flex items-center justify-center transition active:scale-95"
+              title="Bulan berikutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center mb-3 px-2 py-1.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+            <span className="text-xs font-extrabold text-slate-800 capitalize">
+              {format(currentMonth, 'MMMM yyyy', { locale: id })}
+            </span>
+          </div>
+        )}
 
         {/* Day Header Row */}
         <div className="grid grid-cols-7 gap-1 text-center mb-1">
@@ -146,9 +165,24 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
         {/* Calendar Days Grid */}
         <div className="grid grid-cols-7 gap-1 text-center">
           {calendarDays.map((d) => {
+            const dStr = format(d, 'yyyy-MM-dd');
             const isSelected = isSameDay(d, activeDate);
             const isCurrentM = isSameMonth(d, currentMonth);
             const isTod = isToday(d);
+            const isBeforeMin = minDate ? dStr < minDate : false;
+            const isAfterMax = maxDate ? dStr > maxDate : false;
+            const isDisabled = (lockedMonth ? !isCurrentM : false) || isBeforeMin || isAfterMax;
+
+            if (isDisabled) {
+              return (
+                <div
+                  key={d.toISOString()}
+                  className="h-8 rounded-xl text-xs font-bold text-slate-200 opacity-30 flex flex-col items-center justify-center cursor-not-allowed select-none"
+                >
+                  <span>{format(d, 'd')}</span>
+                </div>
+              );
+            }
 
             return (
               <button

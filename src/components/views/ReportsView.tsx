@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Category } from '@/types';
 import { formatRupiah } from '@/lib/utils/currency';
 import { exportTransactionsToExcel, exportTransactionsToPDF } from '@/lib/utils/export';
@@ -11,6 +11,7 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   PieChart,
   History,
   Calendar,
@@ -19,7 +20,9 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
-import { format, subMonths, addMonths, subDays, isSameMonth, parseISO } from 'date-fns';
+import { CuteDatePickerModal } from '@/components/common/CuteDatePickerModal';
+import { CuteMonthPickerModal } from '@/components/common/CuteMonthPickerModal';
+import { format, subMonths, addMonths, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { clsx } from 'clsx';
 
@@ -32,8 +35,6 @@ interface ReportsViewProps {
   onItemClick?: (tx: Transaction) => void;
 }
 
-type DateFilterType = 'ALL' | 'THIS_MONTH' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'CUSTOM';
-
 export const ReportsView: React.FC<ReportsViewProps> = ({
   transactions,
   categories,
@@ -45,16 +46,30 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   // Navigation / Tabs state
   const [activeTab, setActiveTab] = useState<'statistic' | 'historical'>('statistic');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
   // Month navigation state for monthly cards & statistics
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => new Date());
 
-  // Historical filters & pagination state
+  // Date range state in Historical tab (locked to selectedMonth)
+  const [startDate, setStartDate] = useState(() =>
+    format(startOfMonth(new Date()), 'yyyy-MM-dd')
+  );
+  const [endDate, setEndDate] = useState(() =>
+    format(endOfMonth(new Date()), 'yyyy-MM-dd')
+  );
+  const [pickingDateType, setPickingDateType] = useState<'START' | 'END' | null>(null);
+
+  // Historical search & pagination state
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState<DateFilterType>('THIS_MONTH');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
   const [visibleCount, setVisibleCount] = useState(15);
+
+  // Synchronize date range whenever selectedMonth changes
+  useEffect(() => {
+    setStartDate(format(startOfMonth(selectedMonth), 'yyyy-MM-dd'));
+    setEndDate(format(endOfMonth(selectedMonth), 'yyyy-MM-dd'));
+    setVisibleCount(15);
+  }, [selectedMonth]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -129,27 +144,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     });
   }, [monthlyTotalExpense, sortedMonthlyCategoryExpenses, categoryMap]);
 
-  // Filtered transactions for Historical Tab
+  // Filtered transactions for Historical Tab (locked to startDate & endDate)
   const filteredHistoricalTransactions = useMemo(() => {
-    const now = new Date();
-    const todayStr = format(now, 'yyyy-MM-dd');
-    const thisMonth = format(now, 'yyyy-MM');
-    const sevenDaysAgoStr = format(subDays(now, 7), 'yyyy-MM-dd');
-    const thirtyDaysAgoStr = format(subDays(now, 30), 'yyyy-MM-dd');
-
     return transactions
       .filter((tx) => {
-        // Date range
-        if (dateFilter === 'THIS_MONTH') {
-          if (!tx.transaction_date.startsWith(thisMonth)) return false;
-        } else if (dateFilter === 'LAST_7_DAYS') {
-          if (tx.transaction_date < sevenDaysAgoStr || tx.transaction_date > todayStr) return false;
-        } else if (dateFilter === 'LAST_30_DAYS') {
-          if (tx.transaction_date < thirtyDaysAgoStr || tx.transaction_date > todayStr) return false;
-        } else if (dateFilter === 'CUSTOM') {
-          if (customStartDate && tx.transaction_date < customStartDate) return false;
-          if (customEndDate && tx.transaction_date > customEndDate) return false;
-        }
+        // Date range bounded strictly within selectedMonth
+        if (startDate && tx.transaction_date < startDate) return false;
+        if (endDate && tx.transaction_date > endDate) return false;
 
         // Search query
         if (searchQuery.trim()) {
@@ -168,7 +169,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         if (dateCmp !== 0) return dateCmp;
         return (b.created_at || '').localeCompare(a.created_at || '');
       });
-  }, [transactions, dateFilter, customStartDate, customEndDate, searchQuery, categoryMap]);
+  }, [transactions, startDate, endDate, searchQuery, categoryMap]);
 
   const displayedHistoricalTransactions = useMemo(() => {
     return filteredHistoricalTransactions.slice(0, visibleCount);
@@ -199,6 +200,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       totalIncomeAll
     );
   };
+
+  const defaultMonthStart = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
+  const defaultMonthEnd = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
+  const isCustomRangeActive = startDate !== defaultMonthStart || endDate !== defaultMonthEnd;
 
   return (
     <div className="space-y-4 pb-24">
@@ -237,21 +242,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-[#7e7ef1]" />
-          <span className="text-xs font-extrabold text-slate-800 capitalize">
+        <button
+          type="button"
+          onClick={() => setIsMonthPickerOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-xl hover:bg-slate-100 transition active:scale-95 group"
+          title="Klik untuk memilih bulan & tahun"
+        >
+          <Calendar className="w-4 h-4 text-[#7e7ef1] group-hover:scale-110 transition" />
+          <span className="text-xs font-extrabold text-slate-800 capitalize group-hover:text-[#7e7ef1] transition">
             {format(selectedMonth, 'MMMM yyyy', { locale: id })}
           </span>
-          {!isSameMonth(selectedMonth, new Date()) && (
-            <button
-              type="button"
-              onClick={() => setSelectedMonth(new Date())}
-              className="text-[10px] font-bold text-[#7e7ef1] hover:underline bg-[#7e7ef1]/10 px-2 py-0.5 rounded-full"
-            >
-              Bulan Ini
-            </button>
-          )}
-        </div>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#7e7ef1] transition" />
+        </button>
 
         <button
           type="button"
@@ -451,68 +453,67 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       {/* TAB 2: HISTORICAL */}
       {activeTab === 'historical' && (
         <div className="space-y-3 animate-in fade-in duration-200">
-          {/* Date Range Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-            {([
-              { key: 'THIS_MONTH', label: 'Bulan Ini' },
-              { key: 'LAST_7_DAYS', label: '7 Hari Terakhir' },
-              { key: 'LAST_30_DAYS', label: '30 Hari Terakhir' },
-              { key: 'ALL', label: 'Semua' },
-              { key: 'CUSTOM', label: 'Kustom' },
-            ] as const).map((pill) => (
-              <button
-                key={pill.key}
-                type="button"
-                onClick={() => {
-                  setDateFilter(pill.key);
-                  setVisibleCount(15);
-                }}
-                className={clsx(
-                  'px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 shrink-0',
-                  dateFilter === pill.key
-                    ? 'bg-[#7e7ef1] text-white shadow-xs'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                )}
-              >
-                {pill.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Date Range Picker */}
-          {dateFilter === 'CUSTOM' && (
-            <div className="flex items-center gap-2 p-3 bg-white rounded-2xl border border-slate-200 text-xs shadow-xs animate-in fade-in duration-150">
-              <div className="flex-1">
-                <label className="block text-[10px] font-semibold text-slate-400 mb-0.5">
-                  Dari Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => {
-                    setCustomStartDate(e.target.value);
+          {/* Locked Date Range Box */}
+          <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                <Calendar className="w-3.5 h-3.5 text-[#7e7ef1]" />
+                <span>Rentang Tanggal</span>
+                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full capitalize">
+                  {format(selectedMonth, 'MMMM yyyy', { locale: id })}
+                </span>
+              </div>
+              {isCustomRangeActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate(defaultMonthStart);
+                    setEndDate(defaultMonthEnd);
                     setVisibleCount(15);
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 outline-none focus:border-[#7e7ef1]"
-                />
-              </div>
-              <span className="text-slate-400 font-bold self-end pb-1.5">—</span>
-              <div className="flex-1">
-                <label className="block text-[10px] font-semibold text-slate-400 mb-0.5">
-                  Sampai Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => {
-                    setCustomEndDate(e.target.value);
-                    setVisibleCount(15);
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 outline-none focus:border-[#7e7ef1]"
-                />
-              </div>
+                  className="text-[10px] font-bold text-[#7e7ef1] hover:underline"
+                >
+                  Reset Sebulan
+                </button>
+              )}
             </div>
-          )}
+
+            <div className="grid grid-cols-2 gap-2">
+              {/* Dari Tanggal */}
+              <button
+                type="button"
+                onClick={() => setPickingDateType('START')}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-[#7e7ef1] hover:bg-white text-left transition group active:scale-98"
+              >
+                <div>
+                  <span className="block text-[10px] font-semibold text-slate-400">
+                    Dari Tanggal
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 group-hover:text-[#7e7ef1] transition">
+                    {format(parseISO(startDate), 'd MMM yyyy', { locale: id })}
+                  </span>
+                </div>
+                <Calendar className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#7e7ef1] transition" />
+              </button>
+
+              {/* Sampai Tanggal */}
+              <button
+                type="button"
+                onClick={() => setPickingDateType('END')}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-[#7e7ef1] hover:bg-white text-left transition group active:scale-98"
+              >
+                <div>
+                  <span className="block text-[10px] font-semibold text-slate-400">
+                    Sampai Tanggal
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 group-hover:text-[#7e7ef1] transition">
+                    {format(parseISO(endDate), 'd MMM yyyy', { locale: id })}
+                  </span>
+                </div>
+                <Calendar className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#7e7ef1] transition" />
+              </button>
+            </div>
+          </div>
 
           {/* Search Box */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs shadow-xs">
@@ -544,7 +545,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               <div className="p-8 text-center space-y-1">
                 <p className="text-xs font-semibold text-slate-600">Tidak ada transaksi ditemukan</p>
                 <p className="text-[11px] text-slate-400">
-                  Coba sesuaikan filter rentang tanggal atau kata kunci pencarian.
+                  Coba sesuaikan rentang tanggal atau kata kunci pencarian.
                 </p>
               </div>
             ) : (
@@ -622,11 +623,49 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
           {!hasMoreHistorical && filteredHistoricalTransactions.length > 0 && (
             <p className="text-center text-[11px] font-medium text-slate-400 py-2">
-              Menampilkan semua {filteredHistoricalTransactions.length} transaksi.
+              Menampilkan semua {filteredHistoricalTransactions.length} transaksi pada rentang ini.
             </p>
           )}
         </div>
       )}
+
+      {/* Month Picker Modal */}
+      <CuteMonthPickerModal
+        isOpen={isMonthPickerOpen}
+        selectedMonth={selectedMonth}
+        onSelectMonth={(newMonth) => setSelectedMonth(newMonth)}
+        onClose={() => setIsMonthPickerOpen(false)}
+      />
+
+      {/* Date Range Picker Modal (for START) */}
+      <CuteDatePickerModal
+        isOpen={pickingDateType === 'START'}
+        selectedDate={startDate}
+        lockedMonth={selectedMonth}
+        maxDate={endDate}
+        title="Pilih Tanggal Mulai"
+        subtitle={`Kunci periode ${format(selectedMonth, 'MMMM yyyy', { locale: id })}`}
+        onSelectDate={(newDate) => {
+          setStartDate(newDate);
+          setVisibleCount(15);
+        }}
+        onClose={() => setPickingDateType(null)}
+      />
+
+      {/* Date Range Picker Modal (for END) */}
+      <CuteDatePickerModal
+        isOpen={pickingDateType === 'END'}
+        selectedDate={endDate}
+        lockedMonth={selectedMonth}
+        minDate={startDate}
+        title="Pilih Tanggal Selesai"
+        subtitle={`Kunci periode ${format(selectedMonth, 'MMMM yyyy', { locale: id })}`}
+        onSelectDate={(newDate) => {
+          setEndDate(newDate);
+          setVisibleCount(15);
+        }}
+        onClose={() => setPickingDateType(null)}
+      />
 
       {/* EXPORT POPUP MODAL */}
       {isExportModalOpen && (
