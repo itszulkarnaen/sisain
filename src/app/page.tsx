@@ -208,7 +208,7 @@ export default function Home() {
     return false;
   }, [profile]);
 
-  // Safe-to-Spend Metric
+  // Safe-to-Spend & Budget Metric
   const safeToSpendSummary = useMemo(() => {
     const salary = profile?.monthly_salary ?? 0;
     const paydayDate = profile?.payday_date || 25;
@@ -218,8 +218,9 @@ export default function Home() {
       paydayDate,
       transactions,
       recurringRules,
+      budgets,
     });
-  }, [profile, transactions, recurringRules]);
+  }, [profile, transactions, recurringRules, budgets]);
 
   // Today's Transactions & Expense
   const todayStr = format(new Date(), 'yyyy-MM-dd');

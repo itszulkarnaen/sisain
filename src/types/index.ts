@@ -76,11 +76,16 @@ export interface Transaction {
 
 export interface SafeToSpendSummary {
   dailySafeToSpend: number;
-  remainingSalary: number;
+  remainingSalary: number; // Sisa uang gaji riil = (Gaji + Income) - Expenses
+  freeCash: number; // Uang bebas = Gaji - Total komitmen ter-budget
+  totalBudgeted: number; // Total budget kategori
+  totalCommitted: number; // Total komitmen (budget + recurring)
+  totalExpenses: number; // Total belanja riil
   daysUntilPayday: number;
   paydayFormatted: string;
   totalMonthlySalary: number;
   salaryUsedPercentage: number;
+  budgetAllocatedPercentage: number;
   status: 'ON_TRACK' | 'WARNING' | 'DEFICIT';
 }
 

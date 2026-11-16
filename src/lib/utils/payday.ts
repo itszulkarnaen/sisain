@@ -1,4 +1,4 @@
-import { SafeToSpendSummary, Transaction, RecurringRule } from '@/types';
+import { SafeToSpendSummary, Transaction, RecurringRule, Budget } from '@/types';
 import {
   differenceInCalendarDays,
   setDate,
@@ -32,11 +32,6 @@ export function getPaydayInMonth(baseDate: Date, paydayDate: number): Date {
 
 /**
  * Menghitung rentang siklus gajian berjalan dan sisa hari menuju gajian berikutnya.
- * Misal: paydayDate = 25
- * Jika hari ini 7 Nov: siklus 25 Okt - 24 Nov, gajian berikutnya 25 Nov (18 hari lagi)
- * Jika hari ini 25 Nov: siklus baru dimulai 25 Nov - 24 Des, gajian berikutnya 25 Des
- * Jika paydayDate = 31 (akhir bulan):
- * Jika hari ini 16 Nov: siklus 31 Okt - 29 Nov, gajian berikutnya 30 Nov (14 hari lagi)
  */
 export function getPaydayCycle(paydayDate: number, referenceDate: Date = new Date()): PaydayCycleInfo {
   const today = startOfDay(referenceDate);
@@ -71,19 +66,21 @@ export function getPaydayCycle(paydayDate: number, referenceDate: Date = new Dat
 }
 
 /**
- * Menghitung metrik Safe-to-Spend Harian & Sisa Saldo Gaji
+ * Menghitung metrik Safe-to-Spend, Uang Bebas (Unallocated), dan Sisa Saldo Gaji Riil
  */
 export function calculateSafeToSpend({
   monthlySalary,
   paydayDate,
   transactions,
   recurringRules = [],
+  budgets = [],
   referenceDate = new Date(),
 }: {
   monthlySalary: number;
   paydayDate: number;
   transactions: Transaction[];
   recurringRules?: RecurringRule[];
+  budgets?: Budget[];
   referenceDate?: Date;
 }): SafeToSpendSummary {
   const cycle = getPaydayCycle(paydayDate, referenceDate);
@@ -103,19 +100,36 @@ export function calculateSafeToSpend({
     }
   }
 
-  // Sisa gaji periode berjalan
+  // Sisa gaji periode berjalan riil di rekening
   const remainingSalary = (monthlySalary + additionalIncome) - totalExpenses;
 
-  // Hitung total tagihan rutin aktif yang BELUM terpotong di siklus ini
+  // 1. Total alokasi budget kategori
+  let totalBudgeted = 0;
+  const budgetedCategoryIds = new Set<string>();
+
+  for (const b of budgets) {
+    if (b.monthly_limit > 0) {
+      totalBudgeted += b.monthly_limit;
+      budgetedCategoryIds.add(b.category_id);
+    }
+  }
+
+  // 2. Tagihan rutin aktif
+  let unbudgetedRecurring = 0;
   let pendingRecurringAmount = 0;
+
   for (const rule of recurringRules) {
     if (!rule.is_active) continue;
+
+    // Untuk komitmen total di luar kategori yang sudah dibudgetkan
+    if (!budgetedCategoryIds.has(rule.category_id)) {
+      unbudgetedRecurring += rule.amount;
+    }
 
     // Cek apakah sudah pernah dieksekusi dalam siklus ini
     if (rule.last_executed_at) {
       const lastExec = startOfDay(new Date(rule.last_executed_at));
       if (!isBefore(lastExec, cycle.cycleStartDate)) {
-        // Sudah dieksekusi di siklus ini
         continue;
       }
     }
@@ -123,7 +137,14 @@ export function calculateSafeToSpend({
     pendingRecurringAmount += rule.amount;
   }
 
-  // Formula Safe-to-Spend Harian
+  const totalCommitted = totalBudgeted + unbudgetedRecurring;
+
+  // Opsi 1: Uang Bebas / Unallocated Cash (Nominal Gaji dikurangi yang sudah dibudgetkan)
+  const freeCash = monthlySalary > 0
+    ? (monthlySalary + additionalIncome) - totalCommitted
+    : 0;
+
+  // Formula Safe-to-Spend Harian (sub-metrik)
   const unallocatedSalary = remainingSalary - pendingRecurringAmount;
   const rawSafeToSpend = monthlySalary > 0
     ? Math.round(unallocatedSalary / cycle.daysRemaining)
@@ -132,16 +153,21 @@ export function calculateSafeToSpend({
   // Status visual
   let status: 'ON_TRACK' | 'WARNING' | 'DEFICIT' = 'ON_TRACK';
   if (monthlySalary > 0) {
-    if (unallocatedSalary <= 0 || rawSafeToSpend <= 0) {
+    if (remainingSalary <= 0 || freeCash < 0) {
       status = 'DEFICIT';
-    } else if (rawSafeToSpend < (monthlySalary / 30) * 0.5) {
+    } else if (remainingSalary < (monthlySalary * 0.2) || totalCommitted > monthlySalary) {
       status = 'WARNING';
     }
   }
 
-  // Persentase gaji terpakai
+  // Persentase gaji terpakai belanja riil
   const salaryUsedPercentage = monthlySalary > 0 
     ? Math.min(100, Math.max(0, Math.round((totalExpenses / monthlySalary) * 100)))
+    : 0;
+
+  // Persentase gaji yang sudah dialokasikan ke budget
+  const budgetAllocatedPercentage = monthlySalary > 0
+    ? Math.min(100, Math.max(0, Math.round((totalCommitted / monthlySalary) * 100)))
     : 0;
 
   const paydayFormatted = format(cycle.nextPaydayDate, 'd MMM', { locale: id });
@@ -149,10 +175,15 @@ export function calculateSafeToSpend({
   return {
     dailySafeToSpend: rawSafeToSpend,
     remainingSalary: monthlySalary > 0 ? remainingSalary : 0,
+    freeCash,
+    totalBudgeted,
+    totalCommitted,
+    totalExpenses,
     daysUntilPayday: cycle.daysRemaining,
     paydayFormatted,
     totalMonthlySalary: monthlySalary,
     salaryUsedPercentage,
+    budgetAllocatedPercentage,
     status,
   };
 }
