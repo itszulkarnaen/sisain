@@ -113,13 +113,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGuestLogin = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sisain_guest', 'true');
-    }
-    router.replace('/');
-  };
-
   return (
     <main className="min-h-screen bg-slate-100 flex justify-center py-0 sm:py-6 selection:bg-indigo-100">
       <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col justify-between p-6 relative overflow-hidden">
@@ -305,13 +298,6 @@ export default function LoginPage() {
 
         {/* Footer: Guest Mode */}
         <div className="relative z-10 text-center pb-2 space-y-2">
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition underline underline-offset-4"
-          >
-            Masuk sebagai Tamu (Offline Mode)
-          </button>
           <p className="text-[10px] text-slate-400">
             &copy; 2026 sisa.in &bull; Dibuat untuk pekerja 9-to-5 mengelola keuangan dengan bijak.
           </p>
