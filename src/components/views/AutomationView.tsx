@@ -188,11 +188,8 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                 )}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs shrink-0"
-                    style={{ backgroundColor: category?.color || '#F1F5F9' }}
-                  >
-                    <CategoryIcon icon={category?.icon || '🔁'} name={category?.name || rule.title} size={22} />
+                  <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                    <CategoryIcon icon={category?.icon || '🔁'} name={category?.name || rule.title} size={40} className="w-10 h-10 object-contain" />
                   </div>
                   <div className="truncate">
                     <h3 className="text-xs font-bold text-slate-800 truncate">{rule.title}</h3>

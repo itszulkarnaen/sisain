@@ -106,7 +106,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div key={catId} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold text-slate-700">
                     <span className="flex items-center gap-1.5">
-                      <CategoryIcon icon={cat?.icon} name={cat?.name} size={16} />
+                      <CategoryIcon icon={cat?.icon} name={cat?.name} size={16} className="w-4 h-4 object-contain inline-block shrink-0" />
                       <span>{cat?.name || 'Lain-lain'}</span>
                     </span>
                     <span>

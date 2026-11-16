@@ -66,12 +66,9 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                 title="Klik untuk edit / hapus transaksi"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  {/* Category icon circle */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 shadow-xs"
-                    style={{ backgroundColor: category?.color || '#F1F5F9' }}
-                  >
-                    <CategoryIcon icon={category?.icon} name={category?.name} size={22} />
+                  {/* Category icon */}
+                  <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                    <CategoryIcon icon={category?.icon} name={category?.name} size={40} className="w-10 h-10 object-contain" />
                   </div>
 
                   <div className="truncate">

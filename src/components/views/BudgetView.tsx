@@ -88,11 +88,8 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs"
-                    style={{ backgroundColor: cat.color || '#F1F5F9' }}
-                  >
-                    <CategoryIcon icon={cat.icon} name={cat.name} size={22} />
+                  <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                    <CategoryIcon icon={cat.icon} name={cat.name} size={40} className="w-10 h-10 object-contain" />
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-800">{cat.name}</h3>

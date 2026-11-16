@@ -259,11 +259,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     : 'border-slate-100 bg-white hover:bg-slate-50'
                 )}
               >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs mb-1"
-                  style={{ backgroundColor: cat.color || '#F1F5F9' }}
-                >
-                  <CategoryIcon icon={cat.icon} name={cat.name} size={22} />
+                <div className="w-10 h-10 flex items-center justify-center shrink-0 mb-1">
+                  <CategoryIcon icon={cat.icon} name={cat.name} size={40} className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-[11px] font-bold text-slate-800 truncate w-full text-center">
                   {cat.name}

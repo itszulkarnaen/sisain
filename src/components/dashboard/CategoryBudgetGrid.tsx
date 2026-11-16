@@ -65,13 +65,10 @@ export const CategoryBudgetGrid: React.FC<CategoryBudgetGridProps> = ({
               onClick={() => onItemClick?.(item)}
               className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs hover:border-indigo-100 active:scale-[0.98] transition cursor-pointer flex flex-col justify-between"
             >
-              {/* Top Row: Icon circle + Percentage */}
+              {/* Top Row: Icon + Percentage */}
               <div className="flex items-center justify-between">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs"
-                  style={{ backgroundColor: category.color || '#F1F5F9' }}
-                >
-                  <CategoryIcon icon={category.icon} name={category.name} size={22} />
+                <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                  <CategoryIcon icon={category.icon} name={category.name} size={40} className="w-10 h-10 object-contain" />
                 </div>
                 <span className={clsx('text-xs font-bold', statusColorClass)}>
                   {percentage}%
