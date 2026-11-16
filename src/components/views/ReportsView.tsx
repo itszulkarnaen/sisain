@@ -12,6 +12,7 @@ interface ReportsViewProps {
   isProOrTrial: boolean;
   userName?: string;
   onLockedFeatureClick: () => void;
+  onItemClick?: (tx: Transaction) => void;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
@@ -20,6 +21,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   isProOrTrial,
   userName = 'Pengguna',
   onLockedFeatureClick,
+  onItemClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
@@ -173,12 +175,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 divide-y divide-slate-100 overflow-hidden shadow-xs">
-          {filteredTransactions.slice(0, 15).map((tx) => {
+          {filteredTransactions.map((tx) => {
             const cat = categoryMap.get(tx.category_id);
             return (
-              <div key={tx.id} className="p-3 flex items-center justify-between text-xs">
+              <div
+                key={tx.id}
+                onClick={() => onItemClick?.(tx)}
+                className="p-3 flex items-center justify-between text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer group"
+                title="Klik untuk edit / hapus transaksi"
+              >
                 <div>
-                  <p className="font-bold text-slate-800">{tx.notes || cat?.name || 'Transaksi'}</p>
+                  <p className="font-bold text-slate-800 group-hover:text-[#7e7ef1] transition">
+                    {tx.notes || cat?.name || 'Transaksi'}
+                  </p>
                   <p className="text-[11px] text-slate-400">
                     {tx.transaction_date} • {cat?.name}
                   </p>

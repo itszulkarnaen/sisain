@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Pencil, Calendar, Check } from 'lucide-react';
+import { X, Pencil, Calendar, Check, Trash2 } from 'lucide-react';
 import { Numpad } from './Numpad';
-import { Category, TransactionType } from '@/types';
+import { Category, Transaction, TransactionType } from '@/types';
 import { formatNumberOnly } from '@/lib/utils/currency';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
@@ -12,21 +12,26 @@ import { id } from 'date-fns/locale';
 interface TransactionModalProps {
   isOpen: boolean;
   categories: Category[];
+  editingTransaction?: Transaction | null;
   onClose: () => void;
   onSave: (data: {
+    id?: string;
     amount: number;
     type: TransactionType;
     categoryId: string;
     notes: string;
     transactionDate: string;
   }) => Promise<void>;
+  onDelete?: (transactionId: string) => Promise<void>;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   categories,
+  editingTransaction,
   onClose,
   onSave,
+  onDelete,
 }) => {
   const [amountStr, setAmountStr] = useState('0');
   const [type, setType] = useState<TransactionType>('EXPENSE');
@@ -34,14 +39,27 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [notes, setNotes] = useState('');
   const [transactionDate, setTransactionDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Set default category when categories are loaded
+  // Initialize or reset when modal opens
   useEffect(() => {
-    if (categories.length > 0 && !selectedCategoryId) {
-      const defaultCat = categories.find((c) => c.type === type) || categories[0];
-      if (defaultCat) setSelectedCategoryId(defaultCat.id);
+    if (isOpen) {
+      if (editingTransaction) {
+        setAmountStr(String(editingTransaction.amount));
+        setType(editingTransaction.type);
+        setSelectedCategoryId(editingTransaction.category_id);
+        setNotes(editingTransaction.notes || '');
+        setTransactionDate(editingTransaction.transaction_date);
+      } else {
+        setAmountStr('0');
+        setType('EXPENSE');
+        setNotes('');
+        setTransactionDate(format(new Date(), 'yyyy-MM-dd'));
+        const defaultCat = categories.find((c) => c.type === 'EXPENSE') || categories[0];
+        if (defaultCat) setSelectedCategoryId(defaultCat.id);
+      }
     }
-  }, [categories, type, selectedCategoryId]);
+  }, [isOpen, editingTransaction, categories]);
 
   if (!isOpen) return null;
 
@@ -73,6 +91,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setIsSaving(true);
     try {
       await onSave({
+        id: editingTransaction?.id,
         amount: numericAmount,
         type,
         categoryId: selectedCategoryId,
@@ -85,6 +104,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       onClose();
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingTransaction || !onDelete) return;
+    const confirmDelete = window.confirm('Yakin mau hapus transaksi ini bro?');
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDelete(editingTransaction.id);
+      onClose();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -103,13 +136,35 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-bold text-slate-900">Tambah Transaksi</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900">
+              {editingTransaction ? 'Edit Transaksi' : 'Tambah Transaksi'}
+            </h2>
+            {editingTransaction && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#7e7ef1]/10 text-[#7e7ef1] border border-[#a0dafd]/40">
+                Mode Edit
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {editingTransaction && onDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || isSaving}
+                className="w-8 h-8 rounded-full bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-600 transition"
+                title="Hapus Transaksi"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Big Amount Display */}
@@ -125,7 +180,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <div className="inline-flex p-1 rounded-full bg-slate-100 border border-slate-200/60">
             <button
               type="button"
-              onClick={() => setType('EXPENSE')}
+              onClick={() => {
+                setType('EXPENSE');
+                const defaultCat = categories.find((c) => c.type === 'EXPENSE');
+                if (defaultCat) setSelectedCategoryId(defaultCat.id);
+              }}
               className={clsx(
                 'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
                 type === 'EXPENSE'
@@ -137,7 +196,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setType('INCOME')}
+              onClick={() => {
+                setType('INCOME');
+                const defaultCat = categories.find((c) => c.type === 'INCOME');
+                if (defaultCat) setSelectedCategoryId(defaultCat.id);
+              }}
               className={clsx(
                 'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
                 type === 'INCOME'
@@ -168,7 +231,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <div className="relative">
             <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer hover:bg-slate-100 transition shrink-0">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>Hari ini ({displayDateText})</span>
+              <span>{displayDateText}</span>
               <input
                 type="date"
                 value={transactionDate}
@@ -214,21 +277,40 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <Numpad onDigitPress={handleDigitPress} onBackspace={handleBackspace} />
         </div>
 
-        {/* Submit Button */}
-        <button
-          type="button"
-          disabled={numericAmount <= 0 || isSaving}
-          onClick={handleFormSubmit}
-          className={clsx(
-            'w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98',
-            numericAmount > 0
-              ? 'bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] hover:from-[#6c6ce8] hover:to-[#5050dc] shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/30'
-              : 'bg-slate-300 cursor-not-allowed shadow-none'
+        {/* Action Buttons: Delete & Submit */}
+        <div className="flex gap-2">
+          {editingTransaction && onDelete && (
+            <button
+              type="button"
+              disabled={isDeleting || isSaving}
+              onClick={handleDelete}
+              className="py-3.5 px-4 rounded-2xl font-bold text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 flex items-center justify-center gap-1.5 transition active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Hapus</span>
+            </button>
           )}
-        >
-          <span>{isSaving ? 'Menyimpan...' : 'Simpan Transaksi'}</span>
-          <Check className="w-4 h-4" />
-        </button>
+          <button
+            type="button"
+            disabled={numericAmount <= 0 || isSaving || isDeleting}
+            onClick={handleFormSubmit}
+            className={clsx(
+              'flex-1 py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98',
+              numericAmount > 0
+                ? 'bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] hover:from-[#6c6ce8] hover:to-[#5050dc] shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/30'
+                : 'bg-slate-300 cursor-not-allowed shadow-none'
+            )}
+          >
+            <span>
+              {isSaving
+                ? 'Menyimpan...'
+                : editingTransaction
+                ? 'Simpan Perubahan'
+                : 'Simpan Transaksi'}
+            </span>
+            <Check className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

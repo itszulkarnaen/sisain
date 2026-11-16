@@ -30,6 +30,7 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('SYNCED');
@@ -190,7 +191,23 @@ export default function Home() {
   const rawTransactions = useLiveQuery(() => db.transactions.orderBy('created_at').reverse().toArray());
   const rawRecurringRules = useLiveQuery(() => db.recurringRules.toArray());
 
-  const categories = useMemo(() => rawCategories || [], [rawCategories]);
+  // Pastikan kategori default (termasuk 'Tidak Terduga') selalu di-seed ke Dexie
+  useEffect(() => {
+    for (const cat of DEFAULT_CATEGORIES) {
+      db.categories.put(cat).catch(() => {});
+    }
+  }, []);
+
+  const categories = useMemo(() => {
+    const list = rawCategories || [];
+    const existingIds = new Set(list.map((c) => c.id));
+    const missing = DEFAULT_CATEGORIES.filter((dc) => !existingIds.has(dc.id));
+    if (missing.length > 0) {
+      db.categories.bulkPut(missing).catch(() => {});
+      return [...list, ...missing];
+    }
+    return list;
+  }, [rawCategories]);
   const budgets = useMemo(() => rawBudgets || [], [rawBudgets]);
   const transactions = useMemo(() => rawTransactions || [], [rawTransactions]);
   const recurringRules = useMemo(() => rawRecurringRules || [], [rawRecurringRules]);
@@ -266,40 +283,91 @@ export default function Home() {
   }, [recurringRules]);
 
   // Handlers
+  const handleOpenAddModal = () => {
+    setEditingTransaction(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleEditTransaction = (tx: Transaction) => {
+    setEditingTransaction(tx);
+    setIsAddModalOpen(true);
+  };
+
   const handleSaveTransaction = async (data: {
+    id?: string;
     amount: number;
     type: TransactionType;
     categoryId: string;
     notes: string;
     transactionDate: string;
   }) => {
-    const newTx: Transaction = {
-      id: crypto.randomUUID(),
-      user_id: profile?.id || 'user-usep-default',
-      wallet_id: 'wallet-default',
-      category_id: data.categoryId,
-      amount: data.amount,
-      type: data.type,
-      transaction_date: data.transactionDate,
-      notes: data.notes || null,
-      created_at: new Date().toISOString(),
-      is_synced: false,
-    };
+    const existing = await db.profiles.toCollection().first();
+    const userId = existing?.id || profile?.id || 'guest-user';
+    const isEditing = Boolean(data.id);
+    const txId = data.id || crypto.randomUUID();
 
-    // Save locally in Dexie (<100ms)
-    await db.transactions.add(newTx);
-
-    // Micro-celebration
-    try {
-      confetti({
-        particleCount: 25,
-        spread: 60,
-        origin: { y: 0.8 },
+    if (isEditing) {
+      await db.transactions.update(txId, {
+        category_id: data.categoryId,
+        amount: data.amount,
+        type: data.type,
+        transaction_date: data.transactionDate,
+        notes: data.notes || null,
+        is_synced: false,
       });
-    } catch {}
 
-    // Trigger sync in background
-    syncPendingTransactions().catch(() => {});
+      if (supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
+        await supabase
+          .from('transactions')
+          .update({
+            category_id: data.categoryId,
+            amount: data.amount,
+            type: data.type,
+            transaction_date: data.transactionDate,
+            notes: data.notes || null,
+          })
+          .eq('id', txId);
+      }
+    } else {
+      const newTx: Transaction = {
+        id: txId,
+        user_id: userId,
+        wallet_id: 'wallet-default',
+        category_id: data.categoryId,
+        amount: data.amount,
+        type: data.type,
+        transaction_date: data.transactionDate,
+        notes: data.notes || null,
+        created_at: new Date().toISOString(),
+        is_synced: false,
+      };
+
+      // Save locally in Dexie (<100ms)
+      await db.transactions.add(newTx);
+
+      // Micro-celebration
+      try {
+        confetti({
+          particleCount: 25,
+          spread: 60,
+          origin: { y: 0.8 },
+        });
+      } catch {}
+
+      // Trigger sync in background
+      if (navigator.onLine && supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
+        syncPendingTransactions().catch(() => {});
+      }
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    await db.transactions.delete(id);
+    const existing = await db.profiles.toCollection().first();
+    const userId = existing?.id || profile?.id;
+    if (supabase && userId && userId !== 'user-usep-default' && userId !== 'guest-user') {
+      await supabase.from('transactions').delete().eq('id', id);
+    }
   };
 
   const handleSaveBudget = async (categoryId: string, monthlyLimit: number) => {
@@ -522,6 +590,8 @@ export default function Home() {
                 transactions={todayTransactions}
                 categories={categories}
                 totalTodayExpense={totalTodayExpense}
+                onItemClick={handleEditTransaction}
+                onViewAllClick={() => setActiveTab('reports')}
               />
             </div>
           )}
@@ -556,6 +626,7 @@ export default function Home() {
               userName={profile?.full_name || 'Pengguna'}
               isProOrTrial={isProOrTrial}
               onLockedFeatureClick={() => setIsPaywallOpen(true)}
+              onItemClick={handleEditTransaction}
             />
           )}
         </div>
@@ -564,15 +635,20 @@ export default function Home() {
         <BottomNav
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenAddModal={handleOpenAddModal}
         />
 
-        {/* Add Transaction Drawer / Numpad Modal */}
+        {/* Add / Edit Transaction Drawer / Numpad Modal */}
         <TransactionModal
           isOpen={isAddModalOpen}
           categories={categories}
-          onClose={() => setIsAddModalOpen(false)}
+          editingTransaction={editingTransaction}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingTransaction(null);
+          }}
           onSave={handleSaveTransaction}
+          onDelete={handleDeleteTransaction}
         />
 
         {/* Paywall Soft-Lock Modal */}

@@ -4,12 +4,14 @@ import React from 'react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { Transaction, Category } from '@/types';
 import { clsx } from 'clsx';
+import { ChevronRight } from 'lucide-react';
 
 interface TodayTransactionsProps {
   transactions: Transaction[];
   categories: Category[];
   totalTodayExpense: number;
   onItemClick?: (tx: Transaction) => void;
+  onViewAllClick?: () => void;
 }
 
 export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
@@ -17,6 +19,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
   categories,
   totalTodayExpense,
   onItemClick,
+  onViewAllClick,
 }) => {
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
@@ -24,10 +27,21 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
     <div className="pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-base font-bold text-slate-900 tracking-tight">Transaksi Hari Ini</h2>
-        <span className="text-xs font-semibold text-rose-500">
-          Total keluar: -{formatRupiah(totalTodayExpense)}
-        </span>
+        <div>
+          <h2 className="text-base font-bold text-slate-900 tracking-tight">Transaksi Hari Ini</h2>
+          <span className="text-xs font-semibold text-rose-500">
+            Total keluar: -{formatRupiah(totalTodayExpense)}
+          </span>
+        </div>
+        {onViewAllClick && (
+          <button
+            onClick={onViewAllClick}
+            className="text-xs font-bold text-[#7e7ef1] hover:underline flex items-center gap-0.5 group"
+          >
+            <span>Semua riwayat</span>
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
+          </button>
+        )}
       </div>
 
       {/* Transaction List */}
@@ -47,7 +61,8 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
               <div
                 key={tx.id}
                 onClick={() => onItemClick?.(tx)}
-                className="flex items-center justify-between p-3.5 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer"
+                className="flex items-center justify-between p-3.5 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer group"
+                title="Klik untuk edit / hapus transaksi"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   {/* Category icon circle */}
@@ -59,7 +74,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                   </div>
 
                   <div className="truncate">
-                    <p className="text-xs font-bold text-slate-800 truncate">
+                    <p className="text-xs font-bold text-slate-800 truncate group-hover:text-[#7e7ef1] transition">
                       {tx.notes || category?.name || 'Transaksi'}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -76,7 +91,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                 </div>
 
                 {/* Amount */}
-                <div className="text-right shrink-0 ml-3">
+                <div className="text-right shrink-0 ml-3 flex items-center gap-1.5">
                   <p
                     className={clsx(
                       'text-xs font-extrabold',
@@ -85,6 +100,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                   >
                     {isExpense ? '-' : '+'}{formatRupiah(tx.amount)}
                   </p>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition" />
                 </div>
               </div>
             );
@@ -94,4 +110,3 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
     </div>
   );
 };
-
