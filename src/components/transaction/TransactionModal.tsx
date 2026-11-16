@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Pencil, Calendar, Check, Trash2 } from 'lucide-react';
 import { Numpad } from './Numpad';
 import { Category, Transaction, TransactionType } from '@/types';
-import { formatNumberOnly } from '@/lib/utils/currency';
+import { formatNumberOnly, formatRupiah } from '@/lib/utils/currency';
 import { clsx } from 'clsx';
 import { format, isToday, isSameDay, subDays, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { CuteDatePickerModal } from '@/components/common/CuteDatePickerModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -43,10 +44,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   // Initialize or reset when modal opens
   useEffect(() => {
     if (isOpen) {
+      setIsConfirmDeleteOpen(false);
       if (editingTransaction) {
         setAmountStr(String(editingTransaction.amount));
         setType(editingTransaction.type);
@@ -110,14 +113,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!editingTransaction || !onDelete) return;
-    const confirmDelete = window.confirm('Yakin mau hapus transaksi ini bro?');
-    if (!confirmDelete) return;
 
     setIsDeleting(true);
     try {
       await onDelete(editingTransaction.id);
+      setIsConfirmDeleteOpen(false);
       onClose();
     } finally {
       setIsDeleting(false);
@@ -166,7 +168,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             {editingTransaction && onDelete && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setIsConfirmDeleteOpen(true)}
                 disabled={isDeleting || isSaving}
                 className="w-8 h-8 rounded-full bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-600 transition"
                 title="Hapus Transaksi"
@@ -293,8 +295,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <button
               type="button"
               disabled={isDeleting || isSaving}
-              onClick={handleDelete}
-              className="py-3.5 px-4 rounded-2xl font-bold text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 flex items-center justify-center gap-1.5 transition active:scale-95"
+              onClick={() => setIsConfirmDeleteOpen(true)}
+              className="py-3.5 px-4 rounded-2xl font-bold text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               <span>Hapus</span>
@@ -328,6 +330,35 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           selectedDate={transactionDate}
           onSelectDate={(newDate) => setTransactionDate(newDate)}
           onClose={() => setIsDatePickerOpen(false)}
+        />
+
+        {/* Custom Confirmation Alert Modal */}
+        <ConfirmModal
+          isOpen={isConfirmDeleteOpen}
+          title="Hapus Transaksi?"
+          message={
+            <span>
+              Yakin mau hapus transaksi{' '}
+              <strong className="text-slate-800 font-semibold">
+                {editingTransaction?.notes ? `"${editingTransaction.notes}"` : (categories.find(c => c.id === editingTransaction?.category_id)?.name || 'ini')}
+              </strong>
+              {editingTransaction ? (
+                <> sebesar <strong className="text-rose-600 font-semibold">{formatRupiah(editingTransaction.amount)}</strong>?</>
+              ) : (
+                ' ini bro?'
+              )}
+              <br />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Catatan ini bakal hilang permanen dari keuangan lu.
+              </span>
+            </span>
+          }
+          confirmText="Ya, Hapus"
+          cancelText="Batal"
+          variant="danger"
+          isLoading={isDeleting}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setIsConfirmDeleteOpen(false)}
         />
       </div>
     </div>

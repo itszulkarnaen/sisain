@@ -6,6 +6,7 @@ import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/c
 import { Repeat, Plus, Trash2, Power, ShieldAlert } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 
 interface AutomationViewProps {
   recurringRules: RecurringRule[];
@@ -36,6 +37,19 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
   const [amountStr, setAmountStr] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
   const [executionDay, setExecutionDay] = useState(1);
+  const [ruleToDelete, setRuleToDelete] = useState<RecurringRule | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!ruleToDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteRule(ruleToDelete.id);
+      setRuleToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!isProOrTrial) {
     return (
@@ -213,7 +227,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     <Power className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => onDeleteRule(rule.id)}
+                    onClick={() => setRuleToDelete(rule)}
                     title="Hapus"
                     className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                   >
@@ -225,6 +239,31 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Confirmation Modal for Rule Deletion */}
+      <ConfirmModal
+        isOpen={Boolean(ruleToDelete)}
+        title="Hapus Tagihan Rutin?"
+        message={
+          ruleToDelete ? (
+            <span>
+              Yakin mau hapus tagihan rutin{' '}
+              <strong className="text-slate-800 font-semibold">"{ruleToDelete.title}"</strong>{' '}
+              sebesar <strong className="text-rose-600 font-semibold">{formatRupiah(ruleToDelete.amount)}</strong>?
+              <br />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Transaksi otomatis bulanan untuk tagihan ini akan dihentikan.
+              </span>
+            </span>
+          ) : ''
+        }
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setRuleToDelete(null)}
+      />
     </div>
   );
 };
