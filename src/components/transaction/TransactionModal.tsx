@@ -220,7 +220,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               className={clsx(
                 'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
                 type === 'INCOME'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-[#a0dafd] text-slate-900 shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               )}
             >

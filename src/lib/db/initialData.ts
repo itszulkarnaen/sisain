@@ -73,7 +73,11 @@ export async function deduplicateAndSyncCategories() {
 
   for (const dc of DEFAULT_CATEGORIES) {
     const existing = refreshedCategories.find(
-      (c) => c.type === dc.type && c.name.trim().toLowerCase() === dc.name.trim().toLowerCase()
+      (c) =>
+        c.type === dc.type &&
+        (c.name.trim().toLowerCase() === dc.name.trim().toLowerCase() ||
+          (dc.name === 'Gaji Pokok' && c.name.trim().toLowerCase() === 'gaji') ||
+          (dc.name === 'Side Hustle' && c.name.trim().toLowerCase() === 'side husle'))
     );
     if (existing) {
       if (existing.icon !== dc.icon) {
