@@ -256,7 +256,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-3 gap-2.5 mb-4 max-h-48 overflow-y-auto pr-0.5">
+        <div className="grid grid-cols-3 gap-2 mb-3.5">
           {filteredCategories.map((cat) => {
             const isSelected = selectedCategoryId === cat.id;
             return (
@@ -265,7 +265,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 type="button"
                 onClick={() => setSelectedCategoryId(cat.id)}
                 className={clsx(
-                  'flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all active:scale-95',
+                  'flex flex-col items-center justify-center py-2 px-1.5 rounded-2xl border transition-all active:scale-95',
                   isSelected
                     ? 'border-[#7e7ef1] bg-[#7e7ef1]/10 ring-2 ring-[#a0dafd]/60 shadow-xs'
                     : 'border-slate-100 bg-white hover:bg-slate-50'
