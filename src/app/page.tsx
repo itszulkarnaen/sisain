@@ -125,12 +125,15 @@ export default function Home() {
           );
         }
 
-        // 2. Clear old dummy data in Dexie if it still holds dummy 'user-usep-default' or another user
+        // 2. Claim old local transactions to authenticated user instead of deleting
         const existingLocalProfile = await db.profiles.toCollection().first();
         if (!existingLocalProfile || existingLocalProfile.id !== user.id) {
           await db.transaction('rw', [db.profiles, db.transactions, db.budgets, db.recurringRules], async () => {
             await db.profiles.clear();
-            await db.transactions.where('user_id').equals('user-usep-default').delete();
+            await db.transactions
+              .where('user_id')
+              .equals('user-usep-default')
+              .modify({ user_id: user.id, is_synced: false });
             await db.budgets.where('user_id').equals('user-usep-default').delete();
             await db.recurringRules.where('user_id').equals('user-usep-default').delete();
           });
@@ -144,6 +147,9 @@ export default function Home() {
 
         // 5. Hydrate real user data from Supabase Cloud
         await hydrateFromCloud(user.id);
+
+        // 6. Sync any pending transactions to cloud
+        await syncPendingTransactions();
 
       } catch (err) {
         console.error('Error during auth check and sync:', err);
