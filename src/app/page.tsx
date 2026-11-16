@@ -297,7 +297,7 @@ export default function Home() {
     }));
   }, [categories, budgets, categorySpendingMap]);
 
-  // Upcoming recurring rules and summary info for the reminder banner
+  // Upcoming bill rules and summary info for the reminder banner (Tagihan / Expense only)
   const upcomingRecurringSummary = useMemo(() => {
     if (!recurringRules || recurringRules.length === 0) return null;
 
@@ -306,11 +306,15 @@ export default function Home() {
     const currentMonth = now.getMonth();
     const currentMonthPrefix = format(now, 'yyyy-MM');
 
-    // Filter active rules only
-    const activeRules = recurringRules.filter((r) => r.is_active);
-    if (activeRules.length === 0) return null;
+    // Filter active EXPENSE rules only (income does not trigger reminder notifications)
+    const activeExpenseRules = recurringRules.filter((r) => {
+      if (!r.is_active) return false;
+      const cat = categories.find((c) => c.id === r.category_id);
+      return cat?.type !== 'INCOME';
+    });
+    if (activeExpenseRules.length === 0) return null;
 
-    const rulesWithDetails = activeRules.map((rule) => {
+    const rulesWithDetails = activeExpenseRules.map((rule) => {
       const isPaidByLastExecuted = Boolean(
         rule.last_executed_at && rule.last_executed_at.startsWith(currentMonthPrefix)
       );
@@ -323,8 +327,6 @@ export default function Home() {
       );
 
       const isPaidThisMonth = isPaidByLastExecuted || isPaidByTransaction;
-      const cat = categories.find((c) => c.id === rule.category_id);
-      const isIncome = cat?.type === 'INCOME';
 
       let dueDate: Date;
       let daysRemaining: number;
@@ -339,14 +341,13 @@ export default function Home() {
 
       return {
         rule,
-        isIncome,
         isPaidThisMonth,
         dueDate,
         daysRemaining,
       };
     });
 
-    // Unpaid rules for current month have top priority
+    // Unpaid bills for current month have top priority
     const unpaidRules = rulesWithDetails.filter((item) => !item.isPaidThisMonth);
     if (unpaidRules.length > 0) {
       unpaidRules.sort((a, b) => a.daysRemaining - b.daysRemaining);
@@ -356,7 +357,6 @@ export default function Home() {
       return {
         nearestRule: nearest.rule,
         nearestDaysRemaining: nearest.daysRemaining,
-        nearestIsIncome: nearest.isIncome,
         totalUpcomingCount: unpaidRules.length,
         totalUpcomingAmount: totalAmount,
       };
@@ -369,7 +369,6 @@ export default function Home() {
       return {
         nearestRule: nearest.rule,
         nearestDaysRemaining: nearest.daysRemaining,
-        nearestIsIncome: nearest.isIncome,
         totalUpcomingCount: 1,
         totalUpcomingAmount: nearest.rule.amount,
       };
@@ -748,14 +747,13 @@ export default function Home() {
                 }}
               />
 
-              {/* Upcoming Bill / Income Reminder Banner */}
+              {/* Upcoming Bill Reminder Banner */}
               {upcomingRecurringSummary && (
                 <UpcomingRecurringBanner
                   rule={upcomingRecurringSummary.nearestRule}
                   daysRemaining={upcomingRecurringSummary.nearestDaysRemaining}
                   totalUpcomingCount={upcomingRecurringSummary.totalUpcomingCount}
                   totalUpcomingAmount={upcomingRecurringSummary.totalUpcomingAmount}
-                  isIncome={upcomingRecurringSummary.nearestIsIncome}
                   onClick={() => setActiveTab('automation')}
                   onMarkAsPaid={(rule) => setRuleToMarkPaid(rule)}
                 />

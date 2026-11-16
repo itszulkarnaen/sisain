@@ -51,7 +51,7 @@ export const UpcomingRecurringBanner: React.FC<UpcomingRecurringBannerProps> = (
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-200/60">
-                {totalUpcomingCount} Jadwal Tagihan & Rutin
+                {totalUpcomingCount} Tagihan Mendatang
               </span>
             </div>
             <p className="text-xs font-extrabold text-slate-900 truncate">
