@@ -11,6 +11,7 @@ VALUES
   ('Belanja', '🛍️', '#FBCFE8', 'EXPENSE', NULL),
   ('Kosan/Tagihan', '🏠', '#BBF7D0', 'EXPENSE', NULL),
   ('Hiburan', '🎬', '#DDD6FE', 'EXPENSE', NULL),
+  ('Tidak Terduga', '⚡', '#FECDD3', 'EXPENSE', NULL),
   ('Gaji Pokok', '💰', '#A7F3D0', 'INCOME', NULL),
   ('Side Hustle', '💻', '#E9D5FF', 'INCOME', NULL)
 ON CONFLICT DO NOTHING;

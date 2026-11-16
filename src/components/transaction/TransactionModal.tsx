@@ -179,9 +179,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
         </div>
 
-        {/* Category Grid (2 rows x 3 columns) */}
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
-          {filteredCategories.slice(0, 6).map((cat) => {
+        {/* Category Grid */}
+        <div className="grid grid-cols-3 gap-2.5 mb-4 max-h-48 overflow-y-auto pr-0.5">
+          {filteredCategories.map((cat) => {
             const isSelected = selectedCategoryId === cat.id;
             return (
               <button

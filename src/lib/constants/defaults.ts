@@ -49,6 +49,14 @@ export const DEFAULT_CATEGORIES: Category[] = [
     color: '#DDD6FE', // Soft purple
     type: 'EXPENSE',
   },
+  {
+    id: 'c0000001-0000-0000-0000-000000000009',
+    user_id: null,
+    name: 'Tidak Terduga',
+    icon: '⚡',
+    color: '#FECDD3', // Soft rose/pink alert
+    type: 'EXPENSE',
+  },
   // Incomes
   {
     id: 'c0000001-0000-0000-0000-000000000007',

@@ -138,10 +138,12 @@ export default function Home() {
         // 3. Put authenticated user profile into Dexie
         await db.profiles.put(finalProfile);
 
-        // 4. Seed default categories if empty
-        const catCount = await db.categories.count();
-        if (catCount === 0) {
-          await db.categories.bulkAdd(DEFAULT_CATEGORIES);
+        // 4. Ensure default categories exist in Dexie
+        for (const defaultCat of DEFAULT_CATEGORIES) {
+          const exists = await db.categories.get(defaultCat.id);
+          if (!exists) {
+            await db.categories.put(defaultCat);
+          }
         }
 
         // 5. Hydrate real user data from Supabase Cloud

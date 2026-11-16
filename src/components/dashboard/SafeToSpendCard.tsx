@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Wallet, Layers, Calendar } from 'lucide-react';
+import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Layers, Calendar, DollarSign } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { SafeToSpendSummary } from '@/types';
 
@@ -21,6 +21,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
     daysUntilPayday,
     paydayFormatted,
     budgetAllocatedPercentage,
+    salaryUsedPercentage,
     status,
     totalMonthlySalary,
   } = summary;
@@ -40,7 +41,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
       <div className="flex items-center justify-between mb-2 relative z-10">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-white/90">
           <ShieldCheck className="w-4 h-4 text-[#a0dafd]" />
-          <span>Uang Bebas (Di Luar Budget)</span>
+          <span>Sisa Saldo Gaji</span>
         </div>
 
         {/* Status Indicator */}
@@ -69,7 +70,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
         </div>
       </div>
 
-      {/* Big Display: Free Cash (Uang Bebas Belum Ter-budget) */}
+      {/* Big Display: Sisa Gaji Riil */}
       <div className="mb-4 relative z-10">
         {!hasSalary ? (
           <div>
@@ -87,33 +88,19 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold tracking-tight">
-                {formatRupiah(freeCash)}
+                {formatRupiah(remainingSalary)}
               </span>
             </div>
             <p className="text-[11px] text-white/80 mt-0.5 font-medium">
-              Sisa gaji yang belum dialokasikan ke pos mana pun (uang dingin)
+              Sisa uang gaji riil di rekening saat ini
             </p>
           </div>
         )}
       </div>
 
-      {/* 2-Column Info Cards: Sisa Gaji Riil vs Total Ter-budget */}
+      {/* 2-Column Info Cards: Total Ter-budget (Kiri) & Uang di Luar Budget (Kanan, tanpa subtext) */}
       <div className="grid grid-cols-2 gap-2 mb-3.5 relative z-10">
-        {/* Sisa Gaji Riil di Rekening */}
-        <div className="bg-white/15 backdrop-blur-md rounded-2xl p-2.5 border border-white/20 flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
-            <Wallet className="w-3 h-3 text-[#a0dafd]" />
-            <span>Sisa Gaji Riil</span>
-          </div>
-          <p className="text-sm font-extrabold text-white mt-1">
-            {hasSalary ? formatRupiah(remainingSalary) : '-'}
-          </p>
-          <span className="text-[9px] text-white/70 mt-0.5">
-            {hasSalary ? `dari total ${formatRupiah(totalMonthlySalary)}` : 'belum diatur'}
-          </span>
-        </div>
-
-        {/* Total Komitmen Ter-budget */}
+        {/* KIRI: Total Ter-budget */}
         <div className="bg-white/15 backdrop-blur-md rounded-2xl p-2.5 border border-white/20 flex flex-col justify-between">
           <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
             <Layers className="w-3 h-3 text-[#a0dafd]" />
@@ -123,8 +110,19 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
             {hasSalary ? formatRupiah(totalCommitted) : '-'}
           </p>
           <span className="text-[9px] text-white/70 mt-0.5">
-            {hasSalary ? `${budgetAllocatedPercentage}% dari gaji dialokasikan` : '0 pos budget'}
+            {hasSalary ? `${budgetAllocatedPercentage}% dari gaji` : '0 pos'}
           </span>
+        </div>
+
+        {/* KANAN: Uang di Luar Budget (Tanpa sub-text) */}
+        <div className="bg-white/15 backdrop-blur-md rounded-2xl p-2.5 border border-white/20 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
+            <DollarSign className="w-3 h-3 text-[#a0dafd]" />
+            <span>Uang di Luar Budget</span>
+          </div>
+          <p className="text-sm font-extrabold text-white mt-1">
+            {hasSalary ? formatRupiah(freeCash) : '-'}
+          </p>
         </div>
       </div>
 
@@ -139,16 +137,16 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
         </span>
       </div>
 
-      {/* Bottom Progress Bar: Budget Allocation */}
+      {/* Bottom Progress Bar: Real Expense vs Salary */}
       <div className="relative z-10">
         <div className="flex items-center justify-between text-[11px] mb-1 font-medium text-white/80">
-          <span>Gaji dialokasikan ke budget</span>
-          <span className="font-bold text-white">{hasSalary ? `${budgetAllocatedPercentage}%` : '-'}</span>
+          <span>Gaji bulan ini terpakai</span>
+          <span className="font-bold text-white">{hasSalary ? `${salaryUsedPercentage}%` : '-'}</span>
         </div>
         <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-white to-[#a0dafd] rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${hasSalary ? Math.min(100, Math.max(0, budgetAllocatedPercentage)) : 0}%` }}
+            style={{ width: `${hasSalary ? Math.min(100, Math.max(0, salaryUsedPercentage)) : 0}%` }}
           />
         </div>
       </div>

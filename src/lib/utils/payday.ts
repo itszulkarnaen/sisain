@@ -85,24 +85,6 @@ export function calculateSafeToSpend({
 }): SafeToSpendSummary {
   const cycle = getPaydayCycle(paydayDate, referenceDate);
 
-  // Filter transaksi dalam siklus berjalan
-  let totalExpenses = 0;
-  let additionalIncome = 0;
-
-  for (const tx of transactions) {
-    const txDate = startOfDay(new Date(tx.transaction_date));
-    if (!isBefore(txDate, cycle.cycleStartDate) && !isAfter(txDate, cycle.cycleEndDate)) {
-      if (tx.type === 'EXPENSE') {
-        totalExpenses += tx.amount;
-      } else if (tx.type === 'INCOME') {
-        additionalIncome += tx.amount;
-      }
-    }
-  }
-
-  // Sisa gaji periode berjalan riil di rekening
-  const remainingSalary = (monthlySalary + additionalIncome) - totalExpenses;
-
   // 1. Total alokasi budget kategori
   let totalBudgeted = 0;
   const budgetedCategoryIds = new Set<string>();
@@ -114,7 +96,30 @@ export function calculateSafeToSpend({
     }
   }
 
-  // 2. Tagihan rutin aktif
+  // 2. Filter transaksi dalam siklus berjalan
+  let totalExpenses = 0;
+  let additionalIncome = 0;
+  let unbudgetedExpenses = 0; // Kategori seperti 'Tidak Terduga' yang memotong uang di luar budget
+
+  for (const tx of transactions) {
+    const txDate = startOfDay(new Date(tx.transaction_date));
+    if (!isBefore(txDate, cycle.cycleStartDate) && !isAfter(txDate, cycle.cycleEndDate)) {
+      if (tx.type === 'EXPENSE') {
+        totalExpenses += tx.amount;
+        // Transaksi di kategori yang TIDAK dibudgetkan (seperti "Tidak Terduga") memotong uang di luar budget!
+        if (!budgetedCategoryIds.has(tx.category_id)) {
+          unbudgetedExpenses += tx.amount;
+        }
+      } else if (tx.type === 'INCOME') {
+        additionalIncome += tx.amount;
+      }
+    }
+  }
+
+  // Sisa gaji periode berjalan riil di rekening
+  const remainingSalary = (monthlySalary + additionalIncome) - totalExpenses;
+
+  // 3. Tagihan rutin aktif
   let unbudgetedRecurring = 0;
   let pendingRecurringAmount = 0;
 
@@ -139,9 +144,9 @@ export function calculateSafeToSpend({
 
   const totalCommitted = totalBudgeted + unbudgetedRecurring;
 
-  // Opsi 1: Uang Bebas / Unallocated Cash (Nominal Gaji dikurangi yang sudah dibudgetkan)
+  // Uang di Luar Budget (Gaji - Total Ter-budget - Belanja Tidak Terduga / Unbudgeted)
   const freeCash = monthlySalary > 0
-    ? (monthlySalary + additionalIncome) - totalCommitted
+    ? Math.max(0, (monthlySalary + additionalIncome) - totalCommitted - unbudgetedExpenses)
     : 0;
 
   // Formula Safe-to-Spend Harian (sub-metrik)
@@ -153,7 +158,7 @@ export function calculateSafeToSpend({
   // Status visual
   let status: 'ON_TRACK' | 'WARNING' | 'DEFICIT' = 'ON_TRACK';
   if (monthlySalary > 0) {
-    if (remainingSalary <= 0 || freeCash < 0) {
+    if (remainingSalary <= 0 || freeCash <= 0) {
       status = 'DEFICIT';
     } else if (remainingSalary < (monthlySalary * 0.2) || totalCommitted > monthlySalary) {
       status = 'WARNING';

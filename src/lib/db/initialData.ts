@@ -4,10 +4,12 @@ import { DEFAULT_CATEGORIES } from '../constants/defaults';
 import { format, subDays } from 'date-fns';
 
 export async function initializeAppData() {
-  // 1. Seed Categories if empty
-  const catCount = await db.categories.count();
-  if (catCount === 0) {
-    await db.categories.bulkAdd(DEFAULT_CATEGORIES);
+  // 1. Ensure all Default Categories exist
+  for (const defaultCat of DEFAULT_CATEGORIES) {
+    const exists = await db.categories.get(defaultCat.id);
+    if (!exists) {
+      await db.categories.put(defaultCat);
+    }
   }
 
   // 2. Seed Default Profile if empty
