@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Cloud, WifiOff, RefreshCw, Pencil } from 'lucide-react';
+import { Cloud, WifiOff, RefreshCw } from 'lucide-react';
 import { SyncStatus } from '@/lib/db/sync';
 
 interface TopHeaderProps {
@@ -52,10 +52,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
         <div>
           <p className="text-xs font-medium text-slate-500">{displayDate}</p>
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">Halo, {userName}</h1>
-            <Pencil className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#7e7ef1] transition" />
-          </div>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight">Halo, {userName}</h1>
         </div>
       </div>
 
