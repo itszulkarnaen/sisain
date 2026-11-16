@@ -15,7 +15,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { Profile } from '@/types';
-import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
+import { formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { getPaydayCycle } from '@/lib/utils/payday';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -169,98 +169,77 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-[#7e7ef1]" />
-                <span>Foto Profil & Avatar</span>
+                <span>Avatar</span>
               </label>
               <span className="text-[10px] text-slate-400 font-medium">Klik untuk memilih</span>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Preview Avatar Terpilih */}
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border-2 border-[#7e7ef1] shadow-sm flex items-center justify-center p-0.5">
+            {/* 5 Columns x 2 Rows Grid (No Scroll) */}
+            <div className="grid grid-cols-5 gap-2">
+              {/* Opsi Foto Akun Google (Hanya jika user punya foto Google) */}
+              {resolvedGoogleAvatar && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl(resolvedGoogleAvatar)}
+                  className={clsx(
+                    'relative aspect-square rounded-2xl overflow-hidden border-2 transition active:scale-90 flex items-center justify-center group bg-white shadow-2xs',
+                    avatarUrl === resolvedGoogleAvatar
+                      ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100'
+                  )}
+                  title="Gunakan Foto Akun Google Kamu"
+                >
                   <Image
-                    src={avatarUrl || '/pics/boy.png'}
-                    alt="Preview Avatar"
-                    width={56}
-                    height={56}
+                    src={resolvedGoogleAvatar}
+                    alt="Foto Google"
+                    width={48}
+                    height={48}
                     unoptimized
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
-                </div>
-                {resolvedGoogleAvatar && avatarUrl === resolvedGoogleAvatar && (
-                  <span
-                    className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-white border border-slate-200 shadow-xs text-[8px] font-extrabold text-blue-600 flex items-center justify-center"
-                    title="Foto Akun Google Kamu"
-                  >
+                  <span className="absolute bottom-0 inset-x-0 bg-blue-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.2">
                     Google
                   </span>
-                )}
-              </div>
-
-              {/* List Pilihan Avatar */}
-              <div className="flex-1 overflow-hidden">
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 px-0.5 no-scrollbar">
-                  {/* Opsi Foto Akun Google (Hanya jika user punya foto Google) */}
-                  {resolvedGoogleAvatar && (
-                    <button
-                      type="button"
-                      onClick={() => setAvatarUrl(resolvedGoogleAvatar)}
-                      className={clsx(
-                        'relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition active:scale-90 flex items-center justify-center group',
-                        avatarUrl === resolvedGoogleAvatar
-                          ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
-                      )}
-                      title="Gunakan Foto Akun Google Kamu"
-                    >
-                      <Image
-                        src={resolvedGoogleAvatar}
-                        alt="Foto Google"
-                        width={40}
-                        height={40}
-                        unoptimized
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute bottom-0 inset-x-0 bg-blue-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.2">
-                        Google
-                      </span>
-                    </button>
+                  {avatarUrl === resolvedGoogleAvatar && (
+                    <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-[#7e7ef1] text-white rounded-full flex items-center justify-center text-[8px] font-extrabold shadow-xs">
+                      ✓
+                    </span>
                   )}
+                </button>
+              )}
 
-                  {/* 9 Preset Pics Avatars */}
-                  {PRESET_AVATARS.map((item) => {
-                    const isSelected = avatarUrl === item.path;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setAvatarUrl(item.path)}
-                        className={clsx(
-                          'relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition active:scale-90 flex items-center justify-center p-0.5 bg-white',
-                          isSelected
-                            ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs bg-[#7e7ef1]/10'
-                            : 'border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100'
-                        )}
-                        title={item.label}
-                      >
-                        <Image
-                          src={item.path}
-                          alt={item.label}
-                          width={36}
-                          height={36}
-                          unoptimized
-                          className="w-full h-full object-contain"
-                        />
-                        {isSelected && (
-                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#7e7ef1] text-white rounded-full flex items-center justify-center text-[7px] font-extrabold shadow-xs">
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* 9 Preset Pics Avatars */}
+              {PRESET_AVATARS.map((item) => {
+                const isSelected = avatarUrl === item.path;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setAvatarUrl(item.path)}
+                    className={clsx(
+                      'relative aspect-square rounded-2xl overflow-hidden border-2 transition active:scale-90 flex items-center justify-center p-1 bg-white shadow-2xs',
+                      isSelected
+                        ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs bg-[#7e7ef1]/10'
+                        : 'border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100'
+                    )}
+                    title={item.label}
+                  >
+                    <Image
+                      src={item.path}
+                      alt={item.label}
+                      width={44}
+                      height={44}
+                      unoptimized
+                      className="w-full h-full object-contain"
+                    />
+                    {isSelected && (
+                      <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-[#7e7ef1] text-white rounded-full flex items-center justify-center text-[8px] font-extrabold shadow-xs">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -309,10 +288,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 outline-hidden font-bold text-slate-900 transition bg-white"
               required
             />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Dipakai untuk menghitung batas belanja harian (*Safe-to-Spend*):{' '}
-              {formatRupiah(parseRupiahInput(salaryStr))}
-            </p>
           </div>
 
           {/* Tanggal Gajian (Picker 3 Opsi) */}
