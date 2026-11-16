@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Aplikasi pencatatan transaksi & pengelola gaji harian cerdas dengan otomasi tagihan bulanan untuk pekerja 9-to-5.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192.png",
+    icon: "/favicon.ico",
     shortcut: "/favicon.ico",
     apple: "/apple-icon.png",
   },
