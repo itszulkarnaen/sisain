@@ -13,11 +13,10 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
-  subDays,
   parseISO,
 } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, X, Calendar, Check, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface CuteDatePickerModalProps {
@@ -41,33 +40,25 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
     }
   });
 
-  const [tempDate, setTempDate] = useState(() => {
-    try {
-      return selectedDate ? parseISO(selectedDate) : new Date();
-    } catch {
-      return new Date();
-    }
-  });
-
   useEffect(() => {
     if (isOpen) {
       try {
         const parsed = selectedDate ? parseISO(selectedDate) : new Date();
-        setTempDate(parsed);
         setCurrentMonth(parsed);
       } catch {
-        const now = new Date();
-        setTempDate(now);
-        setCurrentMonth(now);
+        setCurrentMonth(new Date());
       }
     }
   }, [isOpen, selectedDate]);
 
   if (!isOpen) return null;
 
-  const today = new Date();
-  const yesterday = subDays(today, 1);
-  const twoDaysAgo = subDays(today, 2);
+  let activeDate: Date;
+  try {
+    activeDate = selectedDate ? parseISO(selectedDate) : new Date();
+  } catch {
+    activeDate = new Date();
+  }
 
   // Month interval days
   const monthStart = startOfMonth(currentMonth);
@@ -79,14 +70,6 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
   const weekDayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
   const handlePickDate = (d: Date) => {
-    setTempDate(d);
-    onSelectDate(format(d, 'yyyy-MM-dd'));
-    onClose();
-  };
-
-  const handleQuickPreset = (d: Date) => {
-    setTempDate(d);
-    setCurrentMonth(d);
     onSelectDate(format(d, 'yyyy-MM-dd'));
     onClose();
   };
@@ -97,7 +80,7 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
       <div className="fixed inset-0" onClick={onClose} />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-xs sm:max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 z-10 animate-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-xs bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 z-10 animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
           <div className="flex items-center gap-2">
@@ -106,7 +89,7 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
             </div>
             <div>
               <h3 className="text-xs font-extrabold text-slate-900 leading-tight">Pilih Tanggal</h3>
-              <p className="text-[10px] text-slate-400 font-medium">Kapan transaksi ini terjadi?</p>
+              <p className="text-[10px] text-slate-400 font-medium">Klik tanggal transaksi</p>
             </div>
           </div>
           <button
@@ -118,56 +101,8 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
           </button>
         </div>
 
-        {/* Quick Presets */}
-        <div className="mb-3.5">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Sparkles className="w-3 h-3 text-[#7e7ef1]" />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Pilihan Cepat
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleQuickPreset(today)}
-              className={clsx(
-                'py-1.5 px-2 rounded-xl text-[11px] font-bold transition active:scale-95 text-center truncate',
-                isSameDay(tempDate, today)
-                  ? 'bg-[#7e7ef1] text-white shadow-xs'
-                  : 'bg-[#a0dafd]/20 hover:bg-[#a0dafd]/35 text-slate-800 border border-[#a0dafd]/40'
-              )}
-            >
-              Hari Ini
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickPreset(yesterday)}
-              className={clsx(
-                'py-1.5 px-2 rounded-xl text-[11px] font-bold transition active:scale-95 text-center truncate',
-                isSameDay(tempDate, yesterday)
-                  ? 'bg-[#7e7ef1] text-white shadow-xs'
-                  : 'bg-[#a0dafd]/20 hover:bg-[#a0dafd]/35 text-slate-800 border border-[#a0dafd]/40'
-              )}
-            >
-              Kemarin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickPreset(twoDaysAgo)}
-              className={clsx(
-                'py-1.5 px-2 rounded-xl text-[11px] font-bold transition active:scale-95 text-center truncate',
-                isSameDay(tempDate, twoDaysAgo)
-                  ? 'bg-[#7e7ef1] text-white shadow-xs'
-                  : 'bg-[#a0dafd]/20 hover:bg-[#a0dafd]/35 text-slate-800 border border-[#a0dafd]/40'
-              )}
-            >
-              2 Hari Lalu
-            </button>
-          </div>
-        </div>
-
         {/* Month Navigator */}
-        <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center justify-between mb-3 px-1">
           <button
             type="button"
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -207,7 +142,7 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
         {/* Calendar Days Grid */}
         <div className="grid grid-cols-7 gap-1 text-center">
           {calendarDays.map((d) => {
-            const isSelected = isSameDay(d, tempDate);
+            const isSelected = isSameDay(d, activeDate);
             const isCurrentM = isSameMonth(d, currentMonth);
             const isTod = isToday(d);
 
@@ -234,24 +169,6 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
               </button>
             );
           })}
-        </div>
-
-        {/* Selected date preview footer */}
-        <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] text-slate-400">Terpilih:</p>
-            <p className="text-xs font-extrabold text-[#7e7ef1]">
-              {format(tempDate, 'EEEE, d MMMM yyyy', { locale: id })}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => handlePickDate(tempDate)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-xs ring-1 ring-[#a0dafd]/40 active:scale-95 transition"
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>Pilih</span>
-          </button>
         </div>
       </div>
     </div>
