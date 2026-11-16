@@ -74,20 +74,24 @@ export default function Home() {
           user.user_metadata?.name ||
           userEmail.split('@')[0] ||
           'Pengguna';
-        const userAvatar =
-          user.user_metadata?.avatar_url ||
-          user.user_metadata?.picture ||
-          null;
-        if (isMounted) {
-          setGoogleAvatarUrl(userAvatar);
-        }
-
         // 1. Fetch or create profile in Supabase
         const { data: remoteProfile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
+
+        const userAvatar =
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          user.identities?.find((i) => i.identity_data?.avatar_url)?.identity_data?.avatar_url ||
+          user.identities?.find((i) => i.identity_data?.picture)?.identity_data?.picture ||
+          (remoteProfile?.avatar_url?.includes('googleusercontent.com') ? remoteProfile.avatar_url : null) ||
+          null;
+
+        if (isMounted && userAvatar) {
+          setGoogleAvatarUrl(userAvatar);
+        }
 
         let finalProfile: Profile;
 
@@ -724,6 +728,7 @@ export default function Home() {
         {/* Top Header */}
         <TopHeader
           userName={profile?.full_name || 'Pengguna'}
+          avatarUrl={profile?.avatar_url || googleAvatarUrl || undefined}
           syncStatus={syncStatus}
           onSyncClick={() => {
             setSyncStatus('PENDING');

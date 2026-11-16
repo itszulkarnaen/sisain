@@ -60,9 +60,13 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   onOpenPaywall,
   onLogout,
 }) => {
+  const resolvedGoogleAvatar =
+    googleAvatarUrl ||
+    (profile?.avatar_url?.includes('googleusercontent.com') ? profile.avatar_url : null);
+
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [avatarUrl, setAvatarUrl] = useState<string>(
-    profile?.avatar_url || googleAvatarUrl || '/pics/boy.png'
+    profile?.avatar_url || resolvedGoogleAvatar || '/pics/boy.png'
   );
   const [salaryStr, setSalaryStr] = useState(
     profile?.monthly_salary && profile.monthly_salary > 0
@@ -77,7 +81,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setFullName(profile?.full_name || '');
-      setAvatarUrl(profile?.avatar_url || googleAvatarUrl || '/pics/boy.png');
+      setAvatarUrl(profile?.avatar_url || resolvedGoogleAvatar || '/pics/boy.png');
       setSalaryStr(
         profile?.monthly_salary && profile.monthly_salary > 0
           ? formatRupiahInput(profile.monthly_salary)
@@ -99,7 +103,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     profile?.id,
     profile?.full_name,
     profile?.avatar_url,
-    googleAvatarUrl,
+    resolvedGoogleAvatar,
     profile?.monthly_salary,
     profile?.payday_date,
   ]);
@@ -214,7 +218,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     className="w-full h-full object-contain"
                   />
                 </div>
-                {googleAvatarUrl && avatarUrl === googleAvatarUrl && (
+                {resolvedGoogleAvatar && avatarUrl === resolvedGoogleAvatar && (
                   <span
                     className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-white border border-slate-200 shadow-xs text-[8px] font-extrabold text-blue-600 flex items-center justify-center"
                     title="Foto Akun Google Kamu"
@@ -228,20 +232,20 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               <div className="flex-1 overflow-hidden">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 px-0.5 no-scrollbar">
                   {/* Opsi Foto Akun Google (Hanya jika user login via Google) */}
-                  {googleAvatarUrl && (
+                  {resolvedGoogleAvatar && (
                     <button
                       type="button"
-                      onClick={() => setAvatarUrl(googleAvatarUrl)}
+                      onClick={() => setAvatarUrl(resolvedGoogleAvatar)}
                       className={clsx(
                         'relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition active:scale-90 flex items-center justify-center group',
-                        avatarUrl === googleAvatarUrl
+                        avatarUrl === resolvedGoogleAvatar
                           ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs'
                           : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
                       )}
                       title="Gunakan Foto Akun Google Kamu"
                     >
                       <Image
-                        src={googleAvatarUrl}
+                        src={resolvedGoogleAvatar}
                         alt="Foto Google"
                         width={40}
                         height={40}
