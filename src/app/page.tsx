@@ -22,8 +22,10 @@ import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal'
 import { BudgetView } from '@/components/views/BudgetView';
 import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
-import { TransactionType, Transaction, Profile, Category } from '@/types';
-import { format } from 'date-fns';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
+import { formatRupiah } from '@/lib/utils/currency';
+import { TransactionType, Transaction, Profile, Category, RecurringRule } from '@/types';
+import { format, differenceInCalendarDays } from 'date-fns';
 import confetti from 'canvas-confetti';
 
 export default function Home() {
@@ -35,6 +37,8 @@ export default function Home() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('SYNCED');
   const [authChecking, setAuthChecking] = useState(true);
+  const [ruleToMarkPaid, setRuleToMarkPaid] = useState<RecurringRule | null>(null);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
 
   // Auth gate & profile sync
   useEffect(() => {
@@ -293,10 +297,67 @@ export default function Home() {
     }));
   }, [categories, budgets, categorySpendingMap]);
 
-  // Nearest active recurring rule for the banner
-  const nearestRecurringRule = useMemo(() => {
-    return recurringRules.find((r) => r.is_active);
-  }, [recurringRules]);
+  // Nearest active unpaid recurring rule for the reminder banner
+  const nearestRecurringInfo = useMemo(() => {
+    if (!recurringRules || recurringRules.length === 0) return null;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentMonthPrefix = format(now, 'yyyy-MM');
+
+    // Filter active rules only
+    const activeRules = recurringRules.filter((r) => r.is_active);
+    if (activeRules.length === 0) return null;
+
+    const rulesWithDetails = activeRules.map((rule) => {
+      const isPaidByLastExecuted = Boolean(
+        rule.last_executed_at && rule.last_executed_at.startsWith(currentMonthPrefix)
+      );
+
+      const isPaidByTransaction = transactions.some(
+        (tx) =>
+          tx.recurring_rule_id === rule.id &&
+          tx.transaction_date &&
+          tx.transaction_date.startsWith(currentMonthPrefix)
+      );
+
+      const isPaidThisMonth = isPaidByLastExecuted || isPaidByTransaction;
+
+      let dueDate: Date;
+      let daysRemaining: number;
+
+      if (!isPaidThisMonth) {
+        dueDate = new Date(currentYear, currentMonth, rule.execution_day);
+        daysRemaining = differenceInCalendarDays(dueDate, now);
+      } else {
+        dueDate = new Date(currentYear, currentMonth + 1, rule.execution_day);
+        daysRemaining = differenceInCalendarDays(dueDate, now);
+      }
+
+      return {
+        rule,
+        isPaidThisMonth,
+        dueDate,
+        daysRemaining,
+      };
+    });
+
+    // Unpaid rules for current month have top priority
+    const unpaidRules = rulesWithDetails.filter((item) => !item.isPaidThisMonth);
+    if (unpaidRules.length > 0) {
+      unpaidRules.sort((a, b) => a.daysRemaining - b.daysRemaining);
+      return unpaidRules[0];
+    }
+
+    // If all bills are paid this month, only show if next month's bill is very near (<= 3 days)
+    const nextRules = [...rulesWithDetails].sort((a, b) => a.daysRemaining - b.daysRemaining);
+    if (nextRules.length > 0 && nextRules[0].daysRemaining <= 3) {
+      return nextRules[0];
+    }
+
+    return null;
+  }, [recurringRules, transactions]);
 
   // Handlers
   const handleOpenAddModal = () => {
@@ -487,6 +548,80 @@ export default function Home() {
     }
   };
 
+  const handleConfirmMarkAsPaid = async () => {
+    if (!ruleToMarkPaid) return;
+    setIsMarkingPaid(true);
+
+    try {
+      const existing = await db.profiles.toCollection().first();
+      const userId = existing?.id || profile?.id || 'guest-user';
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const txId = crypto.randomUUID();
+      const validCategoryId = LEGACY_CATEGORY_ID_MAP[ruleToMarkPaid.category_id] || ruleToMarkPaid.category_id;
+
+      // 1. Save Transaction to local Dexie
+      const newTx: Transaction = {
+        id: txId,
+        user_id: userId,
+        wallet_id: ruleToMarkPaid.wallet_id || 'wallet-default',
+        category_id: validCategoryId,
+        amount: ruleToMarkPaid.amount,
+        type: 'EXPENSE',
+        transaction_date: todayStr,
+        notes: `[Tagihan] ${ruleToMarkPaid.title}`,
+        is_recurring_instance: true,
+        recurring_rule_id: ruleToMarkPaid.id,
+        created_at: new Date().toISOString(),
+        is_synced: false,
+      };
+
+      await db.transactions.put(newTx);
+
+      // 2. Update recurring rule in Dexie
+      await db.recurringRules.update(ruleToMarkPaid.id, {
+        last_executed_at: todayStr,
+        updated_at: new Date().toISOString(),
+      });
+
+      // 3. Sync to Supabase if authenticated
+      if (supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
+        const { data: wallets } = await supabase
+          .from('wallets')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+        const defaultWalletId = wallets?.[0]?.id || newTx.wallet_id;
+
+        await supabase.from('transactions').insert({
+          id: txId,
+          user_id: userId,
+          wallet_id: defaultWalletId,
+          category_id: validCategoryId,
+          amount: ruleToMarkPaid.amount,
+          type: 'EXPENSE',
+          transaction_date: todayStr,
+          notes: `[Tagihan] ${ruleToMarkPaid.title}`,
+          is_recurring_instance: true,
+          recurring_rule_id: ruleToMarkPaid.id,
+        });
+
+        await supabase
+          .from('recurring_rules')
+          .update({
+            last_executed_at: todayStr,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', ruleToMarkPaid.id);
+      }
+
+      setRuleToMarkPaid(null);
+    } catch (err) {
+      console.error('Error marking bill as paid:', err);
+    } finally {
+      setIsMarkingPaid(false);
+    }
+  };
+
   const handleSaveProfile = async (data: {
     fullName: string;
     monthlySalary: number;
@@ -589,12 +724,15 @@ export default function Home() {
                 }}
               />
 
-              {/* Upcoming Auto-Debit Banner */}
-              <UpcomingRecurringBanner
-                rule={nearestRecurringRule}
-                daysRemaining={5}
-                onClick={() => setActiveTab('automation')}
-              />
+              {/* Upcoming Bill Reminder Banner */}
+              {nearestRecurringInfo && (
+                <UpcomingRecurringBanner
+                  rule={nearestRecurringInfo.rule}
+                  daysRemaining={nearestRecurringInfo.daysRemaining}
+                  onClick={() => setActiveTab('automation')}
+                  onMarkAsPaid={(rule) => setRuleToMarkPaid(rule)}
+                />
+              )}
 
               {/* Category Budget 2-Column Grid */}
               <CategoryBudgetGrid
@@ -630,11 +768,13 @@ export default function Home() {
             <AutomationView
               recurringRules={recurringRules}
               categories={categories}
+              transactions={transactions}
               isProOrTrial={isProOrTrial}
               onLockedFeatureClick={() => setIsPaywallOpen(true)}
               onToggleRule={handleToggleRecurringRule}
               onAddRule={handleAddRecurringRule}
               onDeleteRule={handleDeleteRecurringRule}
+              onMarkAsPaid={(rule) => setRuleToMarkPaid(rule)}
             />
           )}
 
@@ -689,6 +829,35 @@ export default function Home() {
           onSaveProfile={handleSaveProfile}
           onOpenPaywall={() => setIsPaywallOpen(true)}
           onLogout={handleLogout}
+        />
+
+        {/* Confirmation Modal for Marking Bill as Paid */}
+        <ConfirmModal
+          isOpen={Boolean(ruleToMarkPaid)}
+          title="Tandai Sudah Dibayar?"
+          message={
+            ruleToMarkPaid ? (
+              <span>
+                Catat pembayaran tagihan{' '}
+                <strong className="text-slate-800 font-semibold">"{ruleToMarkPaid.title}"</strong>{' '}
+                sebesar{' '}
+                <strong className="text-rose-600 font-semibold">
+                  {formatRupiah(ruleToMarkPaid.amount)}
+                </strong>{' '}
+                ke pengeluaran hari ini?
+                <br />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Transaksi pengeluaran baru akan dicatat dan pengingat bulan ini akan selesai.
+                </span>
+              </span>
+            ) : ''
+          }
+          confirmText="Ya, Sudah Bayar"
+          cancelText="Batal"
+          variant="primary"
+          isLoading={isMarkingPaid}
+          onConfirm={handleConfirmMarkAsPaid}
+          onClose={() => setRuleToMarkPaid(null)}
         />
       </div>
     </main>

@@ -82,8 +82,9 @@ async function handleCronExecution(req: NextRequest) {
         continue;
       }
 
-      // Jangan eksekusi dobel jika sudah pernah dieksekusi hari ini
-      if (rule.last_executed_at === todayDateStr) {
+      // Jangan eksekusi dobel jika sudah pernah dieksekusi di bulan yang sama
+      const currentMonthPrefix = todayDateStr.slice(0, 7);
+      if (rule.last_executed_at && rule.last_executed_at.startsWith(currentMonthPrefix)) {
         continue;
       }
 
@@ -97,7 +98,7 @@ async function handleCronExecution(req: NextRequest) {
         amount: rule.amount,
         type: 'EXPENSE',
         transaction_date: todayDateStr,
-        notes: `[Auto-Debit] ${rule.title}`,
+        notes: `[Tagihan] ${rule.title}`,
         is_recurring_instance: true,
         recurring_rule_id: rule.id,
       });

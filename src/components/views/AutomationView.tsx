@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RecurringRule, Category } from '@/types';
+import { RecurringRule, Category, Transaction } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
-import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, ChevronDown, X } from 'lucide-react';
+import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, ChevronDown, X, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
@@ -13,6 +13,7 @@ import { format, parseISO } from 'date-fns';
 interface AutomationViewProps {
   recurringRules: RecurringRule[];
   categories: Category[];
+  transactions?: Transaction[];
   isProOrTrial: boolean;
   onLockedFeatureClick: () => void;
   onToggleRule: (ruleId: string, currentActive: boolean) => Promise<void>;
@@ -23,16 +24,19 @@ interface AutomationViewProps {
     executionDay: number;
   }) => Promise<void>;
   onDeleteRule: (ruleId: string) => Promise<void>;
+  onMarkAsPaid?: (rule: RecurringRule) => void;
 }
 
 export const AutomationView: React.FC<AutomationViewProps> = ({
   recurringRules,
   categories,
+  transactions = [],
   isProOrTrial,
   onLockedFeatureClick,
   onToggleRule,
   onAddRule,
   onDeleteRule,
+  onMarkAsPaid,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
@@ -273,12 +277,21 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
         <div className="space-y-2.5">
           {recurringRules.map((rule) => {
             const category = categoryMap.get(rule.category_id);
+            const currentMonthPrefix = format(new Date(), 'yyyy-MM');
+            const isPaidThisMonth =
+              (rule.last_executed_at && rule.last_executed_at.startsWith(currentMonthPrefix)) ||
+              transactions.some(
+                (t) =>
+                  t.recurring_rule_id === rule.id &&
+                  t.transaction_date &&
+                  t.transaction_date.startsWith(currentMonthPrefix)
+              );
 
             return (
               <div
                 key={rule.id}
                 className={clsx(
-                  'bg-white rounded-2xl p-3.5 border shadow-xs flex items-center justify-between transition',
+                  'bg-white rounded-3xl p-3.5 border shadow-xs flex items-center justify-between transition',
                   rule.is_active ? 'border-slate-100' : 'border-slate-200/60 opacity-60'
                 )}
               >
@@ -291,15 +304,31 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     <p className="text-[11px] text-slate-400">
                       Tiap tgl {rule.execution_day} • {formatRupiah(rule.amount)}
                     </p>
+                    {isPaidThisMonth && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full mt-1">
+                        ✓ Lunas bulan ini
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isPaidThisMonth && rule.is_active && onMarkAsPaid && (
+                    <button
+                      type="button"
+                      onClick={() => onMarkAsPaid(rule)}
+                      title="Tandai sudah dibayar"
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-700 text-xs font-bold flex items-center gap-1 transition cursor-pointer border border-amber-200/60"
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Bayar</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => onToggleRule(rule.id, rule.is_active)}
                     title={rule.is_active ? 'Jeda Otomasi' : 'Aktifkan'}
                     className={clsx(
-                      'p-2 rounded-xl text-xs font-bold transition',
+                      'p-2 rounded-xl text-xs font-bold transition cursor-pointer',
                       rule.is_active
                         ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                         : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
@@ -310,7 +339,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                   <button
                     onClick={() => setRuleToDelete(rule)}
                     title="Hapus"
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                    className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
