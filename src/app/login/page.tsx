@@ -305,15 +305,8 @@ export default function LoginPage() {
 
         {/* Footer: Guest Mode */}
         <div className="relative z-10 text-center pb-2">
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition underline underline-offset-4"
-          >
-            Coba Mode Offline / Tamu (Tanpa Akun)
-          </button>
           <p className="text-[10px] text-slate-400 mt-2">
-            Data tersimpan lokal di browser via IndexedDB dan siap disinkronkan kapan saja.
+                &copy; 2026 sisa.in &bull; Dibuat untuk pekerja 9-to-5 mengelola keuangan dengan bijak.
           </p>
         </div>
 

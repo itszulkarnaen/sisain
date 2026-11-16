@@ -115,9 +115,6 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
               <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
                 Pasang sisa.in
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#7e7ef1]/10 text-[#5a5ae0]">
-                PWA Web App
-              </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5 leading-snug">
               Bisa dipasang langsung ke layar HP tanpa download dari Play Store / App Store!
@@ -155,7 +152,6 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <span>🍎</span>
             <span>iPhone (Safari)</span>
             {platform === 'ios' && (
               <span className="w-1.5 h-1.5 rounded-full bg-[#7e7ef1]" />
@@ -170,7 +166,6 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <span>🤖</span>
             <span>Android (Chrome)</span>
             {platform === 'android' && (
               <span className="w-1.5 h-1.5 rounded-full bg-[#7e7ef1]" />
