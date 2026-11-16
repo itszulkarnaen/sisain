@@ -48,6 +48,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
   }
 
   const budgetMap = new Map(budgets.map((b) => [b.category_id, b]));
+  const expenseCategories = categories.filter((c) => c.type === 'EXPENSE');
+  const totalAllocated = expenseCategories.reduce((sum, cat) => {
+    const budget = budgetMap.get(cat.id);
+    return sum + (budget?.monthly_limit || 0);
+  }, 0);
+  const activeCount = expenseCategories.filter((c) => (budgetMap.get(c.id)?.monthly_limit || 0) > 0).length;
 
   const handleStartEdit = (catId: string, currentLimit: number) => {
     setEditingCategoryId(catId);
@@ -69,8 +75,22 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         </p>
       </div>
 
+      {/* Total Anggaran Summary Card */}
+      <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-[#7e7ef1]/10 via-[#a0dafd]/15 to-[#7e7ef1]/5 rounded-2xl border border-[#a0dafd]/40 shadow-xs">
+        <div>
+          <span className="text-[11px] font-semibold text-slate-500 block">Total Pagu Ter-budget</span>
+          <span className="text-base font-extrabold text-[#5050dc]">{formatRupiah(totalAllocated)}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] text-slate-400 block font-medium">Kategori diatur</span>
+          <span className="text-xs font-bold text-slate-700">
+            {activeCount} dari {expenseCategories.length} pos
+          </span>
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {categories.filter((c) => c.type === 'EXPENSE').map((cat) => {
+        {expenseCategories.map((cat) => {
           const budget = budgetMap.get(cat.id);
           const limit = budget?.monthly_limit || 0;
           const spent = categorySpendingMap.get(cat.id) || 0;

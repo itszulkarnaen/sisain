@@ -1,5 +1,5 @@
 import { db } from './dexie';
-import { Category, Profile, RecurringRule } from '@/types';
+import { Category, Profile, RecurringRule, Budget } from '@/types';
 import { DEFAULT_CATEGORIES, LEGACY_CATEGORY_ID_MAP } from '../constants/defaults';
 import { format, subDays } from 'date-fns';
 
@@ -120,9 +120,78 @@ export async function deduplicateAndSyncCategories() {
   }
 }
 
+/**
+ * Membersihkan budget duplikat di IndexedDB (Dexie) dan menghapus data budget ghost lama.
+ */
+export async function deduplicateAndSyncBudgets(userId?: string) {
+  const allBudgets = await db.budgets.toArray();
+  if (allBudgets.length === 0) return;
+
+  // 1. Jika user login (bukan usep/guest), hapus sisa budget dummy usep
+  if (userId && userId !== 'user-usep-default' && userId !== 'guest-user') {
+    const dummyBudgets = allBudgets.filter((b) => b.user_id === 'user-usep-default');
+    if (dummyBudgets.length > 0) {
+      await db.budgets.bulkDelete(dummyBudgets.map((b) => b.id));
+    }
+  }
+
+  // 2. Normalisasi dan kelompokkan budget per category_id
+  const refreshed = await db.budgets.toArray();
+  const catMap = new Map<string, Budget[]>();
+
+  for (const b of refreshed) {
+    const validCatId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
+    const group = catMap.get(validCatId) || [];
+    group.push(b);
+    catMap.set(validCatId, group);
+  }
+
+  for (const [catId, group] of catMap.entries()) {
+    if (group.length > 1) {
+      // Urutkan prioritas keeper:
+      // 1. UUID valid (dari Supabase / edit baru) dibanding ID statis 'b-makan'
+      // 2. updated_at atau created_at yang paling baru
+      // 3. monthly_limit valid
+      group.sort((a, b) => {
+        const aIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.id);
+        const bIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.id);
+        if (aIsUuid && !bIsUuid) return -1;
+        if (!aIsUuid && bIsUuid) return 1;
+
+        const aTime = a.updated_at
+          ? new Date(a.updated_at).getTime()
+          : a.created_at
+          ? new Date(a.created_at).getTime()
+          : 0;
+        const bTime = b.updated_at
+          ? new Date(b.updated_at).getTime()
+          : b.created_at
+          ? new Date(b.created_at).getTime()
+          : 0;
+        if (bTime !== aTime) return bTime - aTime;
+
+        return (b.monthly_limit || 0) - (a.monthly_limit || 0);
+      });
+
+      const keeper = group[0];
+      const duplicatesToDelete = group.slice(1).map((b) => b.id);
+      await db.budgets.bulkDelete(duplicatesToDelete);
+
+      if (keeper.category_id !== catId) {
+        await db.budgets.update(keeper.id, { category_id: catId });
+      }
+    } else if (group.length === 1 && group[0].category_id !== catId) {
+      await db.budgets.update(group[0].id, { category_id: catId });
+    }
+  }
+}
+
 export async function initializeAppData() {
   // 1. Ensure Categories are deduplicated and all default categories exist
   await deduplicateAndSyncCategories();
+
+  // 1b. Ensure Budgets are deduplicated
+  await deduplicateAndSyncBudgets();
 
   // 2. Seed Default Profile if empty
   const profileCount = await db.profiles.count();

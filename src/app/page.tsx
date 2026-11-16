@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie';
-import { initializeAppData, deduplicateAndSyncCategories } from '@/lib/db/initialData';
+import { initializeAppData, deduplicateAndSyncCategories, deduplicateAndSyncBudgets } from '@/lib/db/initialData';
 import { syncPendingTransactions, syncBudgetsToCloud, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
 import { LEGACY_CATEGORY_ID_MAP } from '@/lib/constants/defaults';
 import { supabase } from '@/lib/supabase/client';
@@ -25,7 +25,7 @@ import { ReportsView } from '@/components/views/ReportsView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { formatRupiah } from '@/lib/utils/currency';
-import { TransactionType, Transaction, Profile, Category, RecurringRule } from '@/types';
+import { TransactionType, Transaction, Profile, Category, RecurringRule, Budget } from '@/types';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import confetti from 'canvas-confetti';
 
@@ -52,6 +52,7 @@ export default function Home() {
         const isGuest = localStorage.getItem('sisain_guest') || localStorage.getItem('ninetopay_guest');
         if (isGuest === 'true') {
           await initializeAppData().catch(console.error);
+          await deduplicateAndSyncBudgets().catch(console.error);
           if (isMounted) setAuthChecking(false);
           return;
         }
@@ -156,8 +157,9 @@ export default function Home() {
         // 3. Put authenticated user profile into Dexie
         await db.profiles.put(finalProfile);
 
-        // 4. Ensure default categories exist and deduplicate in Dexie
+        // 4. Ensure default categories & budgets exist and deduplicate in Dexie
         await deduplicateAndSyncCategories();
+        await deduplicateAndSyncBudgets(user.id);
 
         // 5. Hydrate real user data from Supabase Cloud
         await hydrateFromCloud(user.id);
@@ -209,9 +211,10 @@ export default function Home() {
   const rawTransactions = useLiveQuery(() => db.transactions.orderBy('created_at').reverse().toArray());
   const rawRecurringRules = useLiveQuery(() => db.recurringRules.toArray());
 
-  // Clean and deduplicate categories on mount
+  // Clean and deduplicate categories & budgets on mount
   useEffect(() => {
     deduplicateAndSyncCategories().catch(console.error);
+    deduplicateAndSyncBudgets().catch(console.error);
   }, []);
 
   // Filter unique categories by normalized name and type
@@ -228,7 +231,35 @@ export default function Home() {
     }
     return unique;
   }, [rawCategories]);
-  const budgets = useMemo(() => rawBudgets || [], [rawBudgets]);
+
+  // Deduplikasi budgets per valid category_id
+  const budgets = useMemo(() => {
+    const list = rawBudgets || [];
+    const map = new Map<string, Budget>();
+    for (const b of list) {
+      if (!b.category_id) continue;
+      const catId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
+      const existing = map.get(catId);
+      if (!existing) {
+        map.set(catId, { ...b, category_id: catId });
+      } else {
+        const existingTime = existing.updated_at
+          ? new Date(existing.updated_at).getTime()
+          : existing.created_at
+          ? new Date(existing.created_at).getTime()
+          : 0;
+        const bTime = b.updated_at
+          ? new Date(b.updated_at).getTime()
+          : b.created_at
+          ? new Date(b.created_at).getTime()
+          : 0;
+        if (bTime >= existingTime) {
+          map.set(catId, { ...b, category_id: catId });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [rawBudgets]);
   const transactions = useMemo(() => rawTransactions || [], [rawTransactions]);
   const recurringRules = useMemo(() => rawRecurringRules || [], [rawRecurringRules]);
 
@@ -478,21 +509,28 @@ export default function Home() {
 
   const handleSaveBudget = async (categoryId: string, monthlyLimit: number) => {
     const validCatId = LEGACY_CATEGORY_ID_MAP[categoryId] || categoryId;
-    const existing = await db.budgets.where('category_id').equals(validCatId).first();
-    const budgetId = existing ? existing.id : crypto.randomUUID();
     const userId = profile?.id || 'user-usep-default';
+    const existingList = await db.budgets.where('category_id').equals(validCatId).toArray();
 
-    if (existing) {
-      await db.budgets.update(existing.id, { monthly_limit: monthlyLimit, category_id: validCatId });
-    } else {
-      await db.budgets.put({
-        id: budgetId,
-        user_id: userId,
-        category_id: validCatId,
-        monthly_limit: monthlyLimit,
-        created_at: new Date().toISOString(),
-      });
+    const existingUuid = existingList.find((b) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.id)
+    );
+    const budgetId = existingUuid?.id || existingList[0]?.id || crypto.randomUUID();
+
+    // Hapus SEMUA duplikat kategori ini di Dexie agar tuntas tidak ada ghost record lama
+    if (existingList.length > 0) {
+      await db.budgets.where('category_id').equals(validCatId).delete();
     }
+
+    const now = new Date().toISOString();
+    await db.budgets.put({
+      id: budgetId,
+      user_id: userId,
+      category_id: validCatId,
+      monthly_limit: monthlyLimit,
+      created_at: existingList[0]?.created_at || now,
+      updated_at: now,
+    });
 
     if (supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
       await supabase.from('budgets').upsert(
@@ -501,7 +539,7 @@ export default function Home() {
           user_id: userId,
           category_id: validCatId,
           monthly_limit: monthlyLimit,
-          updated_at: new Date().toISOString(),
+          updated_at: now,
         },
         { onConflict: 'user_id, category_id' }
       );

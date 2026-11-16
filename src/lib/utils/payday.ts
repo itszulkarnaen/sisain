@@ -1,4 +1,5 @@
 import { SafeToSpendSummary, Transaction, RecurringRule, Budget } from '@/types';
+import { LEGACY_CATEGORY_ID_MAP } from '@/lib/constants/defaults';
 import {
   differenceInCalendarDays,
   setDate,
@@ -85,14 +86,22 @@ export function calculateSafeToSpend({
 }): SafeToSpendSummary {
   const cycle = getPaydayCycle(paydayDate, referenceDate);
 
-  // 1. Total alokasi budget kategori
+  // 1. Total alokasi budget kategori (Deduplikasi by category_id agar tidak dobel hitung jika ada duplikat data lokal)
   let totalBudgeted = 0;
   const budgetedCategoryIds = new Set<string>();
+  const categoryBudgetMap = new Map<string, number>();
 
   for (const b of budgets) {
-    if (b.monthly_limit > 0) {
-      totalBudgeted += b.monthly_limit;
-      budgetedCategoryIds.add(b.category_id);
+    if (b.category_id) {
+      const validCatId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
+      categoryBudgetMap.set(validCatId, b.monthly_limit || 0);
+    }
+  }
+
+  for (const [catId, limit] of categoryBudgetMap.entries()) {
+    if (limit > 0) {
+      totalBudgeted += limit;
+      budgetedCategoryIds.add(catId);
     }
   }
 
@@ -107,7 +116,8 @@ export function calculateSafeToSpend({
       if (tx.type === 'EXPENSE') {
         totalExpenses += tx.amount;
         // Transaksi di kategori yang TIDAK dibudgetkan (seperti "Tidak Terduga") memotong uang di luar budget!
-        if (!budgetedCategoryIds.has(tx.category_id)) {
+        const validTxCatId = LEGACY_CATEGORY_ID_MAP[tx.category_id] || tx.category_id;
+        if (!budgetedCategoryIds.has(validTxCatId)) {
           unbudgetedExpenses += tx.amount;
         }
       } else if (tx.type === 'INCOME') {
@@ -126,8 +136,9 @@ export function calculateSafeToSpend({
   for (const rule of recurringRules) {
     if (!rule.is_active) continue;
 
+    const validRuleCatId = LEGACY_CATEGORY_ID_MAP[rule.category_id] || rule.category_id;
     // Untuk komitmen total di luar kategori yang sudah dibudgetkan
-    if (!budgetedCategoryIds.has(rule.category_id)) {
+    if (!budgetedCategoryIds.has(validRuleCatId)) {
       unbudgetedRecurring += rule.amount;
     }
 

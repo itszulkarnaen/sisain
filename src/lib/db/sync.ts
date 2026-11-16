@@ -116,7 +116,14 @@ export async function syncBudgetsToCloud(userId: string): Promise<{ success: boo
       return { success: true, count: 0 };
     }
 
-    const payload = localBudgets
+    // Deduplikasi per valid category_id
+    const categoryBudgetMap = new Map<string, Budget>();
+    for (const b of localBudgets) {
+      const catId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
+      categoryBudgetMap.set(catId, b);
+    }
+
+    const payload = Array.from(categoryBudgetMap.values())
       .filter((b) => b.monthly_limit > 0)
       .map((b) => {
         const catId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
@@ -129,7 +136,7 @@ export async function syncBudgetsToCloud(userId: string): Promise<{ success: boo
           user_id: userId,
           category_id: catId,
           monthly_limit: b.monthly_limit,
-          updated_at: new Date().toISOString(),
+          updated_at: b.updated_at || new Date().toISOString(),
         };
       });
 
@@ -141,6 +148,25 @@ export async function syncBudgetsToCloud(userId: string): Promise<{ success: boo
       if (error) {
         console.error('Error syncing budgets to Supabase:', error);
         return { success: false, count: 0, error: error.message };
+      }
+
+      // Pastikan di Dexie ID-nya seragam dengan payload Supabase
+      for (const p of payload) {
+        const matches = localBudgets.filter(
+          (b) => (LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id) === p.category_id
+        );
+        for (const m of matches) {
+          if (m.id !== p.id) {
+            await db.budgets.delete(m.id);
+          }
+        }
+        await db.budgets.put({
+          id: p.id,
+          user_id: userId,
+          category_id: p.category_id,
+          monthly_limit: p.monthly_limit,
+          updated_at: p.updated_at,
+        });
       }
     }
 
@@ -186,6 +212,10 @@ export async function hydrateFromCloud(userId: string) {
         ...b,
         category_id: LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id,
       }));
+      // Bersihkan budget lokal dengan category_id yang sama sebelum bulkPut agar ID lokal lama tidak bersanding
+      for (const cb of cleanBudgets) {
+        await db.budgets.where('category_id').equals(cb.category_id).delete();
+      }
       await db.budgets.bulkPut(cleanBudgets);
     }
 
