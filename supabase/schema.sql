@@ -151,3 +151,19 @@ CREATE POLICY "Users can manage own recurring rules" ON public.recurring_rules
 CREATE POLICY "Users can manage own transactions" ON public.transactions
   FOR ALL USING (auth.uid() = user_id);
 
+-- SEED DATA: Kategori Default Global (user_id IS NULL)
+INSERT INTO public.categories (id, user_id, name, icon, color, type) VALUES
+  ('c0000001-0000-0000-0000-000000000001', NULL, 'Makan & Minum', '/category/makan_minum.png', '#FED7AA', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000002', NULL, 'Nongkrong/Kopi', '/category/kopi.png', '#FEF08A', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000003', NULL, 'Transport', '/category/transport.png', '#BAE6FD', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000004', NULL, 'Belanja', '/category/belanja.png', '#FBCFE8', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000005', NULL, 'Kosan/Tagihan', '/category/kosan.png', '#BBF7D0', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000006', NULL, 'Hiburan', '/category/hiburan.png', '#DDD6FE', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000009', NULL, 'Tidak Terduga', '/category/tak_terduga.png', '#FECDD3', 'EXPENSE'),
+  ('c0000001-0000-0000-0000-000000000007', NULL, 'Gaji Pokok', '/category/gaji.png', '#A7F3D0', 'INCOME'),
+  ('c0000001-0000-0000-0000-000000000008', NULL, 'Side Hustle', '/category/side_husle.png', '#E9D5FF', 'INCOME')
+ON CONFLICT (id) DO UPDATE SET
+  icon = EXCLUDED.icon,
+  name = EXCLUDED.name,
+  color = EXCLUDED.color;
+
