@@ -1,5 +1,15 @@
 import { SafeToSpendSummary, Transaction, RecurringRule } from '@/types';
-import { differenceInCalendarDays, setDate, addMonths, subMonths, isAfter, isBefore, startOfDay, format } from 'date-fns';
+import {
+  differenceInCalendarDays,
+  setDate,
+  addMonths,
+  subMonths,
+  isAfter,
+  isBefore,
+  startOfDay,
+  format,
+  lastDayOfMonth,
+} from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export interface PaydayCycleInfo {
@@ -10,33 +20,44 @@ export interface PaydayCycleInfo {
 }
 
 /**
+ * Menghitung tanggal gajian yang valid untuk suatu bulan tertentu.
+ * Jika paydayDate = 31 (akhir bulan), otomatis mengambil hari terakhir bulan tersebut (28/29 Feb, 30 Apr, 31 Jan, dst).
+ * Jika tanggal yang dipilih melebihi jumlah hari di bulan tersebut, di-clamp ke hari terakhir bulan tersebut.
+ */
+export function getPaydayInMonth(baseDate: Date, paydayDate: number): Date {
+  const lastDay = lastDayOfMonth(baseDate).getDate();
+  const day = paydayDate >= 31 || paydayDate <= 0 ? lastDay : Math.min(paydayDate, lastDay);
+  return startOfDay(setDate(baseDate, day));
+}
+
+/**
  * Menghitung rentang siklus gajian berjalan dan sisa hari menuju gajian berikutnya.
  * Misal: paydayDate = 25
  * Jika hari ini 7 Nov: siklus 25 Okt - 24 Nov, gajian berikutnya 25 Nov (18 hari lagi)
  * Jika hari ini 25 Nov: siklus baru dimulai 25 Nov - 24 Des, gajian berikutnya 25 Des
+ * Jika paydayDate = 31 (akhir bulan):
+ * Jika hari ini 16 Nov: siklus 31 Okt - 29 Nov, gajian berikutnya 30 Nov (14 hari lagi)
  */
 export function getPaydayCycle(paydayDate: number, referenceDate: Date = new Date()): PaydayCycleInfo {
   const today = startOfDay(referenceDate);
-  const currentDay = today.getDate();
+  const thisMonthPayday = getPaydayInMonth(today, paydayDate);
 
   let cycleStartDate: Date;
   let nextPaydayDate: Date;
 
-  if (currentDay >= paydayDate) {
-    // Sudah masuk siklus baru bulan ini
-    cycleStartDate = setDate(today, paydayDate);
-    // Gajian berikutnya adalah bulan depan tanggal paydayDate
-    nextPaydayDate = setDate(addMonths(today, 1), paydayDate);
+  if (today.getTime() >= thisMonthPayday.getTime()) {
+    // Sudah masuk siklus baru bulan ini (hari ini >= tanggal gajian bulan ini)
+    cycleStartDate = thisMonthPayday;
+    nextPaydayDate = getPaydayInMonth(addMonths(today, 1), paydayDate);
   } else {
     // Masih di siklus yang berakar dari bulan lalu
-    cycleStartDate = setDate(subMonths(today, 1), paydayDate);
-    // Gajian berikutnya adalah bulan ini tanggal paydayDate
-    nextPaydayDate = setDate(today, paydayDate);
+    cycleStartDate = getPaydayInMonth(subMonths(today, 1), paydayDate);
+    nextPaydayDate = thisMonthPayday;
   }
 
   // Hari terakhir siklus adalah H-1 gajian berikutnya
   const cycleEndDate = startOfDay(new Date(nextPaydayDate.getTime() - 24 * 60 * 60 * 1000));
-  
+
   // Sisa hari menuju tanggal gajian berikutnya (minimal 1 hari)
   const diffDays = differenceInCalendarDays(nextPaydayDate, today);
   const daysRemaining = Math.max(1, diffDays);

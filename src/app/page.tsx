@@ -403,15 +403,17 @@ export default function Home() {
     monthlySalary: number;
     paydayDate: number;
   }) => {
-    if (profile) {
-      await db.profiles.update(profile.id, {
+    const existing = await db.profiles.toCollection().first();
+    const profileId = existing?.id || profile?.id;
+    if (profileId) {
+      await db.profiles.update(profileId, {
         full_name: data.fullName,
         monthly_salary: data.monthlySalary,
         payday_date: data.paydayDate,
         updated_at: new Date().toISOString(),
       });
 
-      if (supabase && profile.id !== 'user-usep-default') {
+      if (supabase && profileId !== 'user-usep-default') {
         await supabase
           .from('profiles')
           .update({
@@ -420,7 +422,7 @@ export default function Home() {
             payday_date: data.paydayDate,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', profile.id);
+          .eq('id', profileId);
       }
     }
   };
