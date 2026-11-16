@@ -350,7 +350,7 @@ export default function Home() {
       };
 
       // Save locally in Dexie (<100ms)
-      await db.transactions.add(newTx);
+      await db.transactions.put(newTx);
 
       // Micro-celebration
       try {
@@ -385,7 +385,7 @@ export default function Home() {
     if (existing) {
       await db.budgets.update(existing.id, { monthly_limit: monthlyLimit });
     } else {
-      await db.budgets.add({
+      await db.budgets.put({
         id: budgetId,
         user_id: userId,
         category_id: categoryId,
@@ -441,7 +441,7 @@ export default function Home() {
       updated_at: new Date().toISOString(),
     };
 
-    await db.recurringRules.add(newRule);
+    await db.recurringRules.put(newRule);
 
     if (supabase && userId !== 'user-usep-default') {
       const { data: wallets } = await supabase

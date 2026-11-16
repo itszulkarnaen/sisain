@@ -34,6 +34,6 @@ export const db = new SisaInDatabase();
 export async function seedDefaultCategories() {
   const count = await db.categories.count();
   if (count === 0) {
-    await db.categories.bulkAdd(DEFAULT_CATEGORIES);
+    await db.categories.bulkPut(DEFAULT_CATEGORIES);
   }
 }

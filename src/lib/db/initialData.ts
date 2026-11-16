@@ -72,19 +72,28 @@ export async function deduplicateAndSyncCategories() {
   const refreshedCategories = await db.categories.toArray();
 
   for (const dc of DEFAULT_CATEGORIES) {
-    const existing = refreshedCategories.find(
+    const existingById = await db.categories.get(dc.id);
+    const existingByName = refreshedCategories.find(
       (c) =>
         c.type === dc.type &&
         (c.name.trim().toLowerCase() === dc.name.trim().toLowerCase() ||
           (dc.name === 'Gaji Pokok' && c.name.trim().toLowerCase() === 'gaji') ||
           (dc.name === 'Side Hustle' && c.name.trim().toLowerCase() === 'side husle'))
     );
-    if (existing) {
-      if (existing.icon !== dc.icon) {
-        await db.categories.update(existing.id, { icon: dc.icon });
+
+    if (existingByName) {
+      if (existingByName.icon !== dc.icon) {
+        await db.categories.update(existingByName.id, { icon: dc.icon });
       }
+    } else if (existingById) {
+      await db.categories.update(dc.id, {
+        name: dc.name,
+        icon: dc.icon,
+        color: dc.color,
+        type: dc.type,
+      });
     } else {
-      await db.categories.add(dc);
+      await db.categories.put(dc);
     }
   }
 }
@@ -109,7 +118,7 @@ export async function initializeAppData() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    await db.profiles.add(defaultProfile);
+    await db.profiles.put(defaultProfile);
   }
 
   // 3. Seed Default Recurring Rule (Kosan) if empty
@@ -128,7 +137,7 @@ export async function initializeAppData() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    await db.recurringRules.add(kosanRule);
+    await db.recurringRules.put(kosanRule);
   }
 
   // 4. Seed sample budgets & transactions if empty (matching the screenshot)
