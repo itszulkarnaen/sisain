@@ -3,6 +3,7 @@
 import React from 'react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { Category } from '@/types';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { clsx } from 'clsx';
 
 export interface CategoryBudgetDisplay {
@@ -70,7 +71,7 @@ export const CategoryBudgetGrid: React.FC<CategoryBudgetGridProps> = ({
                   className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs"
                   style={{ backgroundColor: category.color || '#F1F5F9' }}
                 >
-                  <span>{category.icon || '📦'}</span>
+                  <CategoryIcon icon={category.icon} name={category.name} size={22} />
                 </div>
                 <span className={clsx('text-xs font-bold', statusColorClass)}>
                   {percentage}%

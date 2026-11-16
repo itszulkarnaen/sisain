@@ -5,6 +5,7 @@ import { Transaction, Category } from '@/types';
 import { formatRupiah } from '@/lib/utils/currency';
 import { exportTransactionsToExcel, exportTransactionsToPDF } from '@/lib/utils/export';
 import { FileSpreadsheet, FileText, Search } from 'lucide-react';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface ReportsViewProps {
   transactions: Transaction[];
@@ -105,7 +106,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div key={catId} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold text-slate-700">
                     <span className="flex items-center gap-1.5">
-                      <span>{cat?.icon || '📦'}</span>
+                      <CategoryIcon icon={cat?.icon} name={cat?.name} size={16} />
                       <span>{cat?.name || 'Lain-lain'}</span>
                     </span>
                     <span>

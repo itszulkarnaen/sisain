@@ -5,6 +5,7 @@ import { formatRupiah } from '@/lib/utils/currency';
 import { Transaction, Category } from '@/types';
 import { clsx } from 'clsx';
 import { ChevronRight } from 'lucide-react';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface TodayTransactionsProps {
   transactions: Transaction[];
@@ -70,7 +71,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 shadow-xs"
                     style={{ backgroundColor: category?.color || '#F1F5F9' }}
                   >
-                    <span>{category?.icon || '💸'}</span>
+                    <CategoryIcon icon={category?.icon} name={category?.name} size={22} />
                   </div>
 
                   <div className="truncate">

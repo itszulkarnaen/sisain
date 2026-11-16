@@ -5,6 +5,7 @@ import { Category, Budget } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { Edit2, ShieldAlert } from 'lucide-react';
 import { clsx } from 'clsx';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface BudgetViewProps {
   categories: Category[];
@@ -91,7 +92,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs"
                     style={{ backgroundColor: cat.color || '#F1F5F9' }}
                   >
-                    <span>{cat.icon}</span>
+                    <CategoryIcon icon={cat.icon} name={cat.name} size={22} />
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-800">{cat.name}</h3>

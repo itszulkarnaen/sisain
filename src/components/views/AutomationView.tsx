@@ -5,6 +5,7 @@ import { RecurringRule, Category } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { Repeat, Plus, Trash2, Power, ShieldAlert } from 'lucide-react';
 import { clsx } from 'clsx';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface AutomationViewProps {
   recurringRules: RecurringRule[];
@@ -126,7 +127,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
+                    {c.icon.startsWith('/') ? '' : `${c.icon} `}{c.name}
                   </option>
                 ))}
               </select>
@@ -191,7 +192,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs shrink-0"
                     style={{ backgroundColor: category?.color || '#F1F5F9' }}
                   >
-                    <span>{category?.icon || '🔁'}</span>
+                    <CategoryIcon icon={category?.icon || '🔁'} name={category?.name || rule.title} size={22} />
                   </div>
                   <div className="truncate">
                     <h3 className="text-xs font-bold text-slate-800 truncate">{rule.title}</h3>

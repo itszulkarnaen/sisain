@@ -8,6 +8,7 @@ import { formatNumberOnly } from '@/lib/utils/currency';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -262,7 +263,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-xs mb-1"
                   style={{ backgroundColor: cat.color || '#F1F5F9' }}
                 >
-                  <span>{cat.icon}</span>
+                  <CategoryIcon icon={cat.icon} name={cat.name} size={22} />
                 </div>
                 <span className="text-[11px] font-bold text-slate-800 truncate w-full text-center">
                   {cat.name}

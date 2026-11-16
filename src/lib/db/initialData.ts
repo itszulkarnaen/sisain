@@ -68,18 +68,20 @@ export async function deduplicateAndSyncCategories() {
     await db.categories.bulkDelete(idsToDelete);
   }
 
-  // Tambahkan kategori default yang BELUM ADA secara nama
+  // Perbarui icon atau tambahkan kategori default yang BELUM ADA secara nama
   const refreshedCategories = await db.categories.toArray();
-  const existingNames = new Set(
-    refreshedCategories.map((c) => `${c.type}_${c.name.trim().toLowerCase()}`)
-  );
 
-  const missingDefaults = DEFAULT_CATEGORIES.filter(
-    (dc) => !existingNames.has(`${dc.type}_${dc.name.trim().toLowerCase()}`)
-  );
-
-  if (missingDefaults.length > 0) {
-    await db.categories.bulkAdd(missingDefaults);
+  for (const dc of DEFAULT_CATEGORIES) {
+    const existing = refreshedCategories.find(
+      (c) => c.type === dc.type && c.name.trim().toLowerCase() === dc.name.trim().toLowerCase()
+    );
+    if (existing) {
+      if (existing.icon !== dc.icon) {
+        await db.categories.update(existing.id, { icon: dc.icon });
+      }
+    } else {
+      await db.categories.add(dc);
+    }
   }
 }
 
