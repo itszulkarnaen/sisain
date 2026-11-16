@@ -241,12 +241,22 @@ export default function Home() {
   // Today's Transactions & Expense
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todayTransactions = useMemo(() => {
-    return transactions.filter((tx) => tx.transaction_date === todayStr);
+    return transactions.filter((tx) => {
+      if (!tx.transaction_date) return false;
+      const cleanDate = tx.transaction_date.slice(0, 10);
+      return cleanDate === todayStr;
+    });
   }, [transactions, todayStr]);
 
   const totalTodayExpense = useMemo(() => {
     return todayTransactions
       .filter((tx) => tx.type === 'EXPENSE')
+      .reduce((acc, tx) => acc + tx.amount, 0);
+  }, [todayTransactions]);
+
+  const totalTodayIncome = useMemo(() => {
+    return todayTransactions
+      .filter((tx) => tx.type === 'INCOME')
       .reduce((acc, tx) => acc + tx.amount, 0);
   }, [todayTransactions]);
 
@@ -587,6 +597,7 @@ export default function Home() {
                 transactions={todayTransactions}
                 categories={categories}
                 totalTodayExpense={totalTodayExpense}
+                totalTodayIncome={totalTodayIncome}
                 onItemClick={handleEditTransaction}
                 onViewAllClick={() => setActiveTab('reports')}
               />

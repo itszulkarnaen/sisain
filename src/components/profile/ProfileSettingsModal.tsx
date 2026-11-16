@@ -157,9 +157,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 <User className="w-3.5 h-3.5 text-[#7e7ef1]" />
                 <span>Nama Panggilan</span>
               </span>
-              <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Bisa diedit
-              </span>
             </label>
             <div className="relative">
               <input

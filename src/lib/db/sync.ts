@@ -62,7 +62,7 @@ export async function syncPendingTransactions(): Promise<{ success: boolean; cou
       category_id: tx.category_id,
       amount: tx.amount,
       type: tx.type,
-      transaction_date: tx.transaction_date,
+      transaction_date: tx.transaction_date ? tx.transaction_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
       notes: tx.notes || null,
       is_recurring_instance: tx.is_recurring_instance || false,
       recurring_rule_id: tx.recurring_rule_id || null,
@@ -115,6 +115,7 @@ export async function hydrateFromCloud(userId: string) {
     if (!txError && cloudTx && cloudTx.length > 0) {
       const localFormat: Transaction[] = cloudTx.map((tx) => ({
         ...tx,
+        transaction_date: tx.transaction_date ? tx.transaction_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
         is_synced: true,
       }));
       await db.transactions.bulkPut(localFormat);

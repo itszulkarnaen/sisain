@@ -11,6 +11,7 @@ interface TodayTransactionsProps {
   transactions: Transaction[];
   categories: Category[];
   totalTodayExpense: number;
+  totalTodayIncome?: number;
   onItemClick?: (tx: Transaction) => void;
   onViewAllClick?: () => void;
 }
@@ -19,6 +20,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
   transactions,
   categories,
   totalTodayExpense,
+  totalTodayIncome = 0,
   onItemClick,
   onViewAllClick,
 }) => {
@@ -30,13 +32,21 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
       <div className="flex items-center justify-between mb-3 px-1">
         <div>
           <h2 className="text-base font-bold text-slate-900 tracking-tight">Transaksi Hari Ini</h2>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#a0dafd]/30 border border-[#a0dafd]/70 text-[11px] font-medium text-slate-700 shadow-2xs">
-              <span>Total keluar:</span>
+              <span>Keluar:</span>
               <span className="font-extrabold text-slate-900">
                 {totalTodayExpense > 0 ? `-${formatRupiah(totalTodayExpense)}` : formatRupiah(0)}
               </span>
             </span>
+            {totalTodayIncome > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-800 shadow-2xs">
+                <span>Masuk:</span>
+                <span className="font-extrabold text-emerald-600">
+                  +{formatRupiah(totalTodayIncome)}
+                </span>
+              </span>
+            )}
           </div>
         </div>
         {onViewAllClick && (

@@ -26,7 +26,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
     totalMonthlySalary,
   } = summary;
 
-  const hasSalary = totalMonthlySalary > 0;
+  const hasSalary = (totalMonthlySalary || 0) > 0 || (remainingSalary || 0) > 0;
 
   return (
     <div

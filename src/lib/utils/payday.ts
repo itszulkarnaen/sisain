@@ -143,43 +143,44 @@ export function calculateSafeToSpend({
   }
 
   const totalCommitted = totalBudgeted + unbudgetedRecurring;
+  const effectiveBaseIncome = monthlySalary + additionalIncome;
 
-  // Uang di Luar Budget (Gaji - Total Ter-budget - Belanja Tidak Terduga / Unbudgeted)
-  const freeCash = monthlySalary > 0
-    ? Math.max(0, (monthlySalary + additionalIncome) - totalCommitted - unbudgetedExpenses)
+  // Uang di Luar Budget (Gaji + Pemasukan Tambahan - Total Ter-budget - Belanja Tidak Terduga / Unbudgeted)
+  const freeCash = effectiveBaseIncome > 0
+    ? Math.max(0, effectiveBaseIncome - totalCommitted - unbudgetedExpenses)
     : 0;
 
   // Formula Safe-to-Spend Harian (sub-metrik)
   const unallocatedSalary = remainingSalary - pendingRecurringAmount;
-  const rawSafeToSpend = monthlySalary > 0
+  const rawSafeToSpend = effectiveBaseIncome > 0
     ? Math.round(unallocatedSalary / cycle.daysRemaining)
     : 0;
 
   // Status visual
   let status: 'ON_TRACK' | 'WARNING' | 'DEFICIT' = 'ON_TRACK';
-  if (monthlySalary > 0) {
+  if (effectiveBaseIncome > 0) {
     if (remainingSalary <= 0 || freeCash <= 0) {
       status = 'DEFICIT';
-    } else if (remainingSalary < (monthlySalary * 0.2) || totalCommitted > monthlySalary) {
+    } else if (remainingSalary < (effectiveBaseIncome * 0.2) || totalCommitted > effectiveBaseIncome) {
       status = 'WARNING';
     }
   }
 
   // Persentase gaji terpakai belanja riil
-  const salaryUsedPercentage = monthlySalary > 0 
-    ? Math.min(100, Math.max(0, Math.round((totalExpenses / monthlySalary) * 100)))
+  const salaryUsedPercentage = effectiveBaseIncome > 0 
+    ? Math.min(100, Math.max(0, Math.round((totalExpenses / effectiveBaseIncome) * 100)))
     : 0;
 
   // Persentase gaji yang sudah dialokasikan ke budget
-  const budgetAllocatedPercentage = monthlySalary > 0
-    ? Math.min(100, Math.max(0, Math.round((totalCommitted / monthlySalary) * 100)))
+  const budgetAllocatedPercentage = effectiveBaseIncome > 0
+    ? Math.min(100, Math.max(0, Math.round((totalCommitted / effectiveBaseIncome) * 100)))
     : 0;
 
   const paydayFormatted = format(cycle.nextPaydayDate, 'd MMM', { locale: id });
 
   return {
     dailySafeToSpend: rawSafeToSpend,
-    remainingSalary: monthlySalary > 0 ? remainingSalary : 0,
+    remainingSalary: (monthlySalary > 0 || additionalIncome > 0) ? remainingSalary : 0,
     freeCash,
     totalBudgeted,
     totalCommitted,
