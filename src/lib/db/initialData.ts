@@ -1,16 +1,91 @@
 import { db } from './dexie';
-import { Profile, RecurringRule } from '@/types';
+import { Category, Profile, RecurringRule } from '@/types';
 import { DEFAULT_CATEGORIES } from '../constants/defaults';
 import { format, subDays } from 'date-fns';
 
-export async function initializeAppData() {
-  // 1. Ensure all Default Categories exist
-  for (const defaultCat of DEFAULT_CATEGORIES) {
-    const exists = await db.categories.get(defaultCat.id);
-    if (!exists) {
-      await db.categories.put(defaultCat);
+/**
+ * Membersihkan kategori duplikat di IndexedDB dan memastikan
+ * semua kategori default (seperti 'Tidak Terduga') ada berdasarkan NAMA (bukan ID semata).
+ */
+export async function deduplicateAndSyncCategories() {
+  const allCategories = await db.categories.toArray();
+  const allTransactions = await db.transactions.toArray();
+  const allBudgets = await db.budgets.toArray();
+  const allRules = await db.recurringRules.toArray();
+
+  // Group categories by normalized name + type
+  const map = new Map<string, Category[]>();
+  for (const cat of allCategories) {
+    const key = `${cat.type}_${cat.name.trim().toLowerCase()}`;
+    const group = map.get(key) || [];
+    group.push(cat);
+    map.set(key, group);
+  }
+
+  const idsToDelete: string[] = [];
+
+  for (const [, group] of map.entries()) {
+    if (group.length > 1) {
+      // Cari yang sudah dipakai oleh transaksi/budget
+      let keeper = group[0];
+      for (const item of group) {
+        const isUsed =
+          allTransactions.some((t) => t.category_id === item.id) ||
+          allBudgets.some((b) => b.category_id === item.id) ||
+          allRules.some((r) => r.category_id === item.id);
+        if (isUsed) {
+          keeper = item;
+          break;
+        }
+      }
+
+      // Remap transaksi/budget/rule yang pakai ID duplikat ke keeper.id
+      for (const item of group) {
+        if (item.id !== keeper.id) {
+          idsToDelete.push(item.id);
+
+          const txsToRemap = allTransactions.filter((t) => t.category_id === item.id);
+          for (const tx of txsToRemap) {
+            await db.transactions.update(tx.id, { category_id: keeper.id });
+          }
+
+          const budgetsToRemap = allBudgets.filter((b) => b.category_id === item.id);
+          for (const b of budgetsToRemap) {
+            await db.budgets.update(b.id, { category_id: keeper.id });
+          }
+
+          const rulesToRemap = allRules.filter((r) => r.category_id === item.id);
+          for (const r of rulesToRemap) {
+            await db.recurringRules.update(r.id, { category_id: keeper.id });
+          }
+        }
+      }
     }
   }
+
+  // Hapus kategori duplikat
+  if (idsToDelete.length > 0) {
+    await db.categories.bulkDelete(idsToDelete);
+  }
+
+  // Tambahkan kategori default yang BELUM ADA secara nama
+  const refreshedCategories = await db.categories.toArray();
+  const existingNames = new Set(
+    refreshedCategories.map((c) => `${c.type}_${c.name.trim().toLowerCase()}`)
+  );
+
+  const missingDefaults = DEFAULT_CATEGORIES.filter(
+    (dc) => !existingNames.has(`${dc.type}_${dc.name.trim().toLowerCase()}`)
+  );
+
+  if (missingDefaults.length > 0) {
+    await db.categories.bulkAdd(missingDefaults);
+  }
+}
+
+export async function initializeAppData() {
+  // 1. Ensure Categories are deduplicated and all default categories exist
+  await deduplicateAndSyncCategories();
 
   // 2. Seed Default Profile if empty
   const profileCount = await db.profiles.count();

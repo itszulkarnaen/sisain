@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie';
-import { initializeAppData } from '@/lib/db/initialData';
+import { initializeAppData, deduplicateAndSyncCategories } from '@/lib/db/initialData';
 import { syncPendingTransactions, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
 import { DEFAULT_CATEGORIES } from '@/lib/constants/defaults';
 import { supabase } from '@/lib/supabase/client';
@@ -22,7 +22,7 @@ import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal'
 import { BudgetView } from '@/components/views/BudgetView';
 import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
-import { TransactionType, Transaction, Profile } from '@/types';
+import { TransactionType, Transaction, Profile, Category } from '@/types';
 import { format } from 'date-fns';
 import confetti from 'canvas-confetti';
 
@@ -139,13 +139,8 @@ export default function Home() {
         // 3. Put authenticated user profile into Dexie
         await db.profiles.put(finalProfile);
 
-        // 4. Ensure default categories exist in Dexie
-        for (const defaultCat of DEFAULT_CATEGORIES) {
-          const exists = await db.categories.get(defaultCat.id);
-          if (!exists) {
-            await db.categories.put(defaultCat);
-          }
-        }
+        // 4. Ensure default categories exist and deduplicate in Dexie
+        await deduplicateAndSyncCategories();
 
         // 5. Hydrate real user data from Supabase Cloud
         await hydrateFromCloud(user.id);
@@ -191,22 +186,24 @@ export default function Home() {
   const rawTransactions = useLiveQuery(() => db.transactions.orderBy('created_at').reverse().toArray());
   const rawRecurringRules = useLiveQuery(() => db.recurringRules.toArray());
 
-  // Pastikan kategori default (termasuk 'Tidak Terduga') selalu di-seed ke Dexie
+  // Clean and deduplicate categories on mount
   useEffect(() => {
-    for (const cat of DEFAULT_CATEGORIES) {
-      db.categories.put(cat).catch(() => {});
-    }
+    deduplicateAndSyncCategories().catch(console.error);
   }, []);
 
+  // Filter unique categories by normalized name and type
   const categories = useMemo(() => {
     const list = rawCategories || [];
-    const existingIds = new Set(list.map((c) => c.id));
-    const missing = DEFAULT_CATEGORIES.filter((dc) => !existingIds.has(dc.id));
-    if (missing.length > 0) {
-      db.categories.bulkPut(missing).catch(() => {});
-      return [...list, ...missing];
+    const seen = new Set<string>();
+    const unique: Category[] = [];
+    for (const cat of list) {
+      const key = `${cat.type}_${cat.name.trim().toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(cat);
+      }
     }
-    return list;
+    return unique;
   }, [rawCategories]);
   const budgets = useMemo(() => rawBudgets || [], [rawBudgets]);
   const transactions = useMemo(() => rawTransactions || [], [rawTransactions]);
