@@ -7,7 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie';
 import { initializeAppData, deduplicateAndSyncCategories } from '@/lib/db/initialData';
 import { syncPendingTransactions, syncBudgetsToCloud, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
-import { DEFAULT_CATEGORIES, LEGACY_CATEGORY_ID_MAP } from '@/lib/constants/defaults';
+import { LEGACY_CATEGORY_ID_MAP } from '@/lib/constants/defaults';
 import { supabase } from '@/lib/supabase/client';
 import { calculateSafeToSpend } from '@/lib/utils/payday';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -870,7 +870,7 @@ export default function Home() {
               return (
                 <span>
                   {isIncome ? 'Catat pemasukan rutin ' : 'Catat pembayaran tagihan '}
-                  <strong className="text-slate-800 font-semibold">"{ruleToMarkPaid.title}"</strong>{' '}
+                  <strong className="text-slate-800 font-semibold">&quot;{ruleToMarkPaid.title}&quot;</strong>{' '}
                   sebesar{' '}
                   <strong className={isIncome ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
                     {formatRupiah(ruleToMarkPaid.amount)}

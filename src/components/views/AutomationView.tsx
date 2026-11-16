@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RecurringRule, Category, Transaction } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
-import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, ChevronDown, X, Check } from 'lucide-react';
+import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, X, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
@@ -484,7 +484,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
           ruleToDelete ? (
             <span>
               Yakin ingin menghapus tagihan rutin{' '}
-              <strong className="text-slate-800 font-semibold">"{ruleToDelete.title}"</strong>{' '}
+              <strong className="text-slate-800 font-semibold">&quot;{ruleToDelete.title}&quot;</strong>{' '}
               sebesar <strong className="text-rose-600 font-semibold">{formatRupiah(ruleToDelete.amount)}</strong>?
               <br />
               <span className="text-[11px] text-slate-400 mt-1 block">

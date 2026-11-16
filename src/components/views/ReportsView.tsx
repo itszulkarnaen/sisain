@@ -32,6 +32,8 @@ interface ReportsViewProps {
   onItemClick?: (tx: Transaction) => void;
 }
 
+type DateFilterType = 'ALL' | 'THIS_MONTH' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'CUSTOM';
+
 export const ReportsView: React.FC<ReportsViewProps> = ({
   transactions,
   categories,
@@ -49,9 +51,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
   // Historical filters & pagination state
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState<
-    'ALL' | 'THIS_MONTH' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'CUSTOM'
-  >('THIS_MONTH');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('THIS_MONTH');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [visibleCount, setVisibleCount] = useState(15);
@@ -453,18 +453,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="space-y-3 animate-in fade-in duration-200">
           {/* Date Range Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-            {[
+            {([
               { key: 'THIS_MONTH', label: 'Bulan Ini' },
               { key: 'LAST_7_DAYS', label: '7 Hari Terakhir' },
               { key: 'LAST_30_DAYS', label: '30 Hari Terakhir' },
               { key: 'ALL', label: 'Semua' },
               { key: 'CUSTOM', label: 'Kustom' },
-            ].map((pill) => (
+            ] as const).map((pill) => (
               <button
                 key={pill.key}
                 type="button"
                 onClick={() => {
-                  setDateFilter(pill.key as any);
+                  setDateFilter(pill.key);
                   setVisibleCount(15);
                 }}
                 className={clsx(

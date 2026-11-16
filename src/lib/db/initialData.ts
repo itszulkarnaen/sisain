@@ -59,7 +59,7 @@ export async function deduplicateAndSyncCategories() {
       // Selalu prioritaskan ID resmi DEFAULT_CATEGORIES atau UUID valid sebagai keeper
       const defaultCatKeeper = group.find((item) => DEFAULT_CATEGORIES.some((dc) => dc.id === item.id));
       const uuidKeeper = group.find((item) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id));
-      let keeper = defaultCatKeeper || uuidKeeper || group[0];
+      const keeper = defaultCatKeeper || uuidKeeper || group[0];
 
       // Remap transaksi/budget/rule yang pakai ID duplikat ke keeper.id
       for (const item of group) {
