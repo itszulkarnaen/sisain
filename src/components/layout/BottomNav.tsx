@@ -49,7 +49,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <button
             onClick={onOpenAddModal}
             aria-label="Tambah Transaksi"
-            className="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-[0_8px_20px_rgba(79,70,229,0.45)] hover:shadow-[0_8px_25px_rgba(79,70,229,0.6)] active:scale-95 transition-transform"
+            className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#7e7ef1] to-[#6464e0] text-white flex items-center justify-center shadow-[0_8px_20px_rgba(126,126,241,0.4)] hover:shadow-[0_8px_25px_rgba(126,126,241,0.55)] ring-4 ring-[#a0dafd]/40 active:scale-95 transition-all"
           >
             <Plus className="w-7 h-7 stroke-[2.5]" />
           </button>

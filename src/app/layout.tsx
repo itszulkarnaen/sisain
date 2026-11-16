@@ -14,18 +14,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NineToPay — Smart Daily Expense Tracker",
+  title: "sisa.in — Smart Daily Expense Tracker",
   description: "Aplikasi pencatatan transaksi & pengelola gaji harian cerdas dengan otomasi tagihan bulanan untuk pekerja 9-to-5.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "NineToPay",
+    title: "sisa.in",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5352ed",
+  themeColor: "#7e7ef1",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -40,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 selection:bg-indigo-500 selection:text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 selection:bg-[#7e7ef1] selection:text-white`}
       >
         <ServiceWorkerRegister />
         {children}

@@ -10,6 +10,23 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Custom Brand Theme */
+  --color-brand: #7e7ef1;
+  --color-brand-hover: #6c6ce8;
+  --color-secondary: #a0dafd;
+
+  /* Re-map indigo system to main color #7e7ef1 */
+  --color-indigo-50: #f5f5ff;
+  --color-indigo-100: #eaeafd;
+  --color-indigo-200: #d6d6fb;
+  --color-indigo-300: #b5b5f7;
+  --color-indigo-400: #9999f4;
+  --color-indigo-500: #7e7ef1;
+  --color-indigo-600: #7e7ef1;
+  --color-indigo-700: #6c6ce8;
+  --color-indigo-800: #5757cf;
+  --color-indigo-900: #4747ad;
 }
 
 @media (prefers-color-scheme: dark) {

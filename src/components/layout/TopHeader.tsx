@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Cloud, WifiOff, RefreshCw } from 'lucide-react';
+import Image from 'next/image';
+import { Cloud, WifiOff, RefreshCw, Settings } from 'lucide-react';
 import { SyncStatus } from '@/lib/db/sync';
 
 interface TopHeaderProps {
@@ -14,7 +15,7 @@ interface TopHeaderProps {
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
-  userName = 'Usep',
+  userName = 'Pengguna',
   avatarUrl,
   dateText,
   syncStatus = 'SYNCED',
@@ -31,17 +32,30 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   return (
     <header className="flex items-center justify-between px-4 pt-4 pb-3">
       {/* User Info */}
-      <div className="flex items-center gap-3" onClick={onAvatarClick}>
-        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-indigo-200 to-indigo-100 border border-indigo-200 shadow-sm flex items-center justify-center text-lg select-none">
+      <div
+        className="flex items-center gap-3 cursor-pointer hover:opacity-90 active:scale-98 transition group select-none"
+        onClick={onAvatarClick}
+      >
+        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#7e7ef1]/20 to-[#a0dafd]/30 border border-[#7e7ef1]/30 shadow-sm flex items-center justify-center text-lg select-none group-hover:border-[#7e7ef1] transition">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+            <Image
+              src={avatarUrl}
+              alt={userName}
+              width={44}
+              height={44}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
           ) : (
             <span>🧑‍💼</span>
           )}
         </div>
         <div>
           <p className="text-xs font-medium text-slate-500">{displayDate}</p>
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight">Halo, {userName}</h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">Halo, {userName}</h1>
+            <Settings className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition" />
+          </div>
         </div>
       </div>
 

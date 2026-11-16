@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const next = searchParams.get('next') ?? '/';
 
   if (code) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -13,12 +15,41 @@ export async function GET(request: Request) {
       '';
 
     if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      await supabase.auth.exchangeCodeForSession(code);
+      const cookieStore = await cookies();
+      const supabase = createServerClient(supabaseUrl, supabaseKey, {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+            }
+          },
+        },
+      });
+
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        const forwardedHost = request.headers.get('x-forwarded-host');
+        const isLocalEnv = process.env.NODE_ENV === 'development';
+        if (isLocalEnv) {
+          return NextResponse.redirect(`${origin}${next}`);
+        } else if (forwardedHost) {
+          return NextResponse.redirect(`https://${forwardedHost}${next}`);
+        } else {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
+      }
+      console.error('Supabase exchangeCodeForSession error:', error);
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${origin}/`);
+  // URL to redirect to if sign in failed
+  return NextResponse.redirect(`${origin}/login?error=auth-callback-failed`);
 }
 

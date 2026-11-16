@@ -1,5 +1,5 @@
 -- ============================================================
--- NineToPay Database Schema & Security Policies (Supabase DDL)
+-- sisa.in Database Schema & Security Policies (Supabase DDL)
 -- Version: 1.1 (MVP Zero-KYC Edition)
 -- ============================================================
 

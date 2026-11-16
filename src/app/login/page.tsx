@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { Lock, Mail, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
@@ -19,7 +20,7 @@ export default function LoginPage() {
   // Check if already logged in or guest
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const isGuest = localStorage.getItem('ninetopay_guest');
+      const isGuest = localStorage.getItem('sisain_guest') || localStorage.getItem('ninetopay_guest');
       if (isGuest === 'true') {
         router.replace('/');
         return;
@@ -55,7 +56,7 @@ export default function LoginPage() {
           password,
           options: {
             data: {
-              full_name: fullName || 'Usep',
+              full_name: fullName || 'Pengguna',
             },
           },
         });
@@ -64,6 +65,7 @@ export default function LoginPage() {
 
         if (data.session) {
           // Direct login
+          localStorage.removeItem('sisain_guest');
           localStorage.removeItem('ninetopay_guest');
           router.replace('/');
         } else {
@@ -77,6 +79,7 @@ export default function LoginPage() {
 
         if (error) throw error;
 
+        localStorage.removeItem('sisain_guest');
         localStorage.removeItem('ninetopay_guest');
         router.replace('/');
       }
@@ -112,7 +115,7 @@ export default function LoginPage() {
 
   const handleGuestLogin = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ninetopay_guest', 'true');
+      localStorage.setItem('sisain_guest', 'true');
     }
     router.replace('/');
   };
@@ -122,25 +125,32 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col justify-between p-6 relative overflow-hidden">
         
         {/* Background Gradients */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 -left-20 w-44 h-44 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#7e7ef1]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 -left-20 w-44 h-44 bg-[#a0dafd]/25 rounded-full blur-2xl pointer-events-none" />
 
         {/* Top Header & Branding */}
         <div className="relative z-10 pt-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 mb-4">
-            <span className="text-2xl font-black tracking-tight">9</span>
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-[#7e7ef1]/20 mb-4 border border-[#a0dafd]/40 bg-white">
+            <Image
+              src="/sisain.png"
+              alt="sisa.in logo"
+              width={64}
+              height={64}
+              priority
+              className="w-full h-full object-cover"
+            />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#7e7ef1]/10 border border-[#a0dafd]/40 text-[11px] font-bold text-[#5555dc] mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-[#7e7ef1]" />
             <span>Smart Daily Expense Tracker</span>
           </div>
 
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            NineToPay
+            sisa.in
           </h1>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            Atur gaji hasil 9-to-5 lu biar aman sampai tanggal gajian berikutnya tanpa defisit.
+            Atur sisa uang belanja lu biar aman sampai tanggal gajian berikutnya tanpa defisit.
           </p>
         </div>
 
@@ -246,7 +256,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-98 transition disabled:opacity-60"
             >
-              <span>{loading ? 'Memproses...' : isRegister ? 'Buat Akun Gratis' : 'Masuk ke NineToPay'}</span>
+              <span>{loading ? 'Memproses...' : isRegister ? 'Buat Akun Gratis' : 'Masuk ke sisa.in'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>

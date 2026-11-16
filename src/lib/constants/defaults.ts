@@ -2,7 +2,7 @@ import { Category } from '@/types';
 
 export const DEFAULT_CATEGORIES: Category[] = [
   {
-    id: 'cat-makan-minum',
+    id: 'c0000001-0000-0000-0000-000000000001',
     user_id: null,
     name: 'Makan & Minum',
     icon: '🍜',
@@ -10,7 +10,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'EXPENSE',
   },
   {
-    id: 'cat-nongkrong-kopi',
+    id: 'c0000001-0000-0000-0000-000000000002',
     user_id: null,
     name: 'Nongkrong/Kopi',
     icon: '☕',
@@ -18,7 +18,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'EXPENSE',
   },
   {
-    id: 'cat-transport',
+    id: 'c0000001-0000-0000-0000-000000000003',
     user_id: null,
     name: 'Transport',
     icon: '🚗',
@@ -26,7 +26,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'EXPENSE',
   },
   {
-    id: 'cat-belanja',
+    id: 'c0000001-0000-0000-0000-000000000004',
     user_id: null,
     name: 'Belanja',
     icon: '🛍️',
@@ -34,7 +34,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'EXPENSE',
   },
   {
-    id: 'cat-kosan-tagihan',
+    id: 'c0000001-0000-0000-0000-000000000005',
     user_id: null,
     name: 'Kosan/Tagihan',
     icon: '🏠',
@@ -42,7 +42,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'EXPENSE',
   },
   {
-    id: 'cat-hiburan',
+    id: 'c0000001-0000-0000-0000-000000000006',
     user_id: null,
     name: 'Hiburan',
     icon: '🎬',
@@ -51,7 +51,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   },
   // Incomes
   {
-    id: 'cat-gaji',
+    id: 'c0000001-0000-0000-0000-000000000007',
     user_id: null,
     name: 'Gaji Utama',
     icon: '💰',
@@ -59,7 +59,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     type: 'INCOME',
   },
   {
-    id: 'cat-freelance',
+    id: 'c0000001-0000-0000-0000-000000000008',
     user_id: null,
     name: 'Side Hustle',
     icon: '💻',

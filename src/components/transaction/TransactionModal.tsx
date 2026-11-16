@@ -117,7 +117,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Rp{formatNumberOnly(numericAmount)}
           </span>
-          <span className="w-0.5 h-8 bg-indigo-500 ml-1 animate-pulse" />
+          <span className="w-0.5 h-8 bg-[#7e7ef1] ml-1 animate-pulse" />
         </div>
 
         {/* Type Toggle: [ Pengeluaran ] [ Pemasukan ] */}
@@ -129,7 +129,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               className={clsx(
                 'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
                 type === 'EXPENSE'
-                  ? 'bg-indigo-600 text-white shadow-xs'
+                  ? 'bg-[#7e7ef1] text-white shadow-xs'
                   : 'text-slate-500 hover:text-slate-700'
               )}
             >
@@ -191,7 +191,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 className={clsx(
                   'flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all active:scale-95',
                   isSelected
-                    ? 'border-indigo-400 bg-orange-50/80 shadow-xs'
+                    ? 'border-[#7e7ef1] bg-[#7e7ef1]/10 ring-2 ring-[#a0dafd]/60 shadow-xs'
                     : 'border-slate-100 bg-white hover:bg-slate-50'
                 )}
               >
@@ -222,7 +222,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           className={clsx(
             'w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98',
             numericAmount > 0
-              ? 'bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 shadow-indigo-500/25'
+              ? 'bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] hover:from-[#6c6ce8] hover:to-[#5050dc] shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/30'
               : 'bg-slate-300 cursor-not-allowed shadow-none'
           )}
         >

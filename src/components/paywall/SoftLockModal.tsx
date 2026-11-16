@@ -26,7 +26,7 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
 
   // WhatsApp deep link message
   const waMessage = encodeURIComponent(
-    `Halo bro, gue udah transfer Rp10.000 buat perpanjang Pro NineToPay.\nEmail Akun: ${userEmail}\nBukti transfer terlampir ya!`
+    `Halo bro, gue udah transfer Rp10.000 buat perpanjang Pro sisa.in.\nEmail Akun: ${userEmail}\nBukti transfer terlampir ya!`
   );
   const waUrl = `https://wa.me/${adminWaNumber}?text=${waMessage}`;
 
@@ -48,20 +48,20 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
 
         {/* Lock Icon & Title */}
         <div className="flex flex-col items-center text-center mt-2 mb-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
+          <div className="w-12 h-12 rounded-full bg-[#7e7ef1]/10 border border-[#a0dafd]/50 flex items-center justify-center text-[#7e7ef1] mb-2 shadow-xs">
             <Lock className="w-6 h-6 stroke-[2.2]" />
           </div>
           <h2 className="text-sm font-semibold text-slate-600">
             Masa Free Trial 30 Hari Selesai 🔐
           </h2>
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-            Upgrade ke NineToPay Pro
+            Upgrade ke sisa.in Pro
           </h1>
         </div>
 
         {/* Benefit Card */}
-        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 overflow-hidden mb-4 shadow-xs">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-500 px-4 py-2 text-white text-xs font-bold text-center">
+        <div className="rounded-2xl border border-[#a0dafd]/40 bg-[#7e7ef1]/5 overflow-hidden mb-4 shadow-xs">
+          <div className="bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] px-4 py-2 text-white text-xs font-bold text-center border-b border-[#a0dafd]/30">
             Langganan Pro — Hanya Rp10.000 / bulan
           </div>
           <div className="p-4 space-y-2.5">

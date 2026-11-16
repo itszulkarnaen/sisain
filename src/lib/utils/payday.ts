@@ -104,14 +104,18 @@ export function calculateSafeToSpend({
 
   // Formula Safe-to-Spend Harian
   const unallocatedSalary = remainingSalary - pendingRecurringAmount;
-  const rawSafeToSpend = Math.round(unallocatedSalary / cycle.daysRemaining);
+  const rawSafeToSpend = monthlySalary > 0
+    ? Math.round(unallocatedSalary / cycle.daysRemaining)
+    : 0;
 
   // Status visual
   let status: 'ON_TRACK' | 'WARNING' | 'DEFICIT' = 'ON_TRACK';
-  if (unallocatedSalary <= 0 || rawSafeToSpend <= 0) {
-    status = 'DEFICIT';
-  } else if (rawSafeToSpend < (monthlySalary / 30) * 0.5) {
-    status = 'WARNING';
+  if (monthlySalary > 0) {
+    if (unallocatedSalary <= 0 || rawSafeToSpend <= 0) {
+      status = 'DEFICIT';
+    } else if (rawSafeToSpend < (monthlySalary / 30) * 0.5) {
+      status = 'WARNING';
+    }
   }
 
   // Persentase gaji terpakai
@@ -123,7 +127,7 @@ export function calculateSafeToSpend({
 
   return {
     dailySafeToSpend: rawSafeToSpend,
-    remainingSalary,
+    remainingSalary: monthlySalary > 0 ? remainingSalary : 0,
     daysUntilPayday: cycle.daysRemaining,
     paydayFormatted,
     totalMonthlySalary: monthlySalary,

@@ -1,5 +1,5 @@
 -- ============================================================
--- NineToPay Initial Seed Data (Kategori Default Global)
+-- sisa.in Initial Seed Data (Kategori Default Global)
 -- Eksekusi di Supabase SQL Editor
 -- ============================================================
 
@@ -14,3 +14,4 @@ VALUES
   ('Gaji Pokok', '💰', '#A7F3D0', 'INCOME', NULL),
   ('Side Hustle', '💻', '#E9D5FF', 'INCOME', NULL)
 ON CONFLICT DO NOTHING;
+

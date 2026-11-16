@@ -7,7 +7,7 @@ export interface AppMeta {
   value: unknown;
 }
 
-export class NineToPayDatabase extends Dexie {
+export class SisaInDatabase extends Dexie {
   transactions!: EntityTable<Transaction, 'id'>;
   categories!: EntityTable<Category, 'id'>;
   budgets!: EntityTable<Budget, 'id'>;
@@ -16,7 +16,7 @@ export class NineToPayDatabase extends Dexie {
   meta!: EntityTable<AppMeta, 'key'>;
 
   constructor() {
-    super('nineToPayDB');
+    super('sisaInDB');
     this.version(1).stores({
       transactions: 'id, user_id, wallet_id, category_id, transaction_date, type, is_synced, created_at',
       categories: 'id, user_id, type, is_synced',
@@ -28,7 +28,7 @@ export class NineToPayDatabase extends Dexie {
   }
 }
 
-export const db = new NineToPayDatabase();
+export const db = new SisaInDatabase();
 
 // Inisialisasi kategori default jika masih kosong
 export async function seedDefaultCategories() {

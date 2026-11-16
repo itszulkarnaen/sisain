@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Category, Budget } from '@/types';
-import { formatRupiah } from '@/lib/utils/currency';
+import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { Edit2, ShieldAlert } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -38,7 +38,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         </p>
         <button
           onClick={onLockedFeatureClick}
-          className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold text-xs shadow-md hover:bg-indigo-700 transition"
+          className="px-6 py-3 rounded-full bg-[#7e7ef1] text-white font-bold text-xs shadow-md hover:bg-[#6c6ce8] ring-1 ring-[#a0dafd]/40 transition"
         >
           Buka Kunci Fitur Pro (Rp10.000)
         </button>
@@ -50,14 +50,12 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
   const handleStartEdit = (catId: string, currentLimit: number) => {
     setEditingCategoryId(catId);
-    setEditLimitStr(currentLimit > 0 ? currentLimit.toString() : '');
+    setEditLimitStr(currentLimit > 0 ? formatRupiahInput(currentLimit) : '');
   };
 
   const handleSave = async (catId: string) => {
-    const val = parseInt(editLimitStr, 10) || 0;
-    if (val > 0) {
-      await onSaveBudget(catId, val);
-    }
+    const val = parseRupiahInput(editLimitStr);
+    await onSaveBudget(catId, val);
     setEditingCategoryId(null);
   };
 
@@ -106,16 +104,17 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 {isEditing ? (
                   <div className="flex items-center gap-2">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={editLimitStr}
-                      onChange={(e) => setEditLimitStr(e.target.value)}
-                      placeholder="Nominal"
-                      className="w-24 px-2 py-1 text-xs border rounded-lg outline-hidden"
+                      onChange={(e) => setEditLimitStr(formatRupiahInput(e.target.value))}
+                      placeholder="Rp 0"
+                      className="w-28 px-2 py-1 text-xs border border-[#a0dafd] focus:border-[#7e7ef1] rounded-lg outline-hidden font-bold text-slate-900"
                       autoFocus
                     />
                     <button
                       onClick={() => handleSave(cat.id)}
-                      className="px-2.5 py-1 text-xs font-bold bg-indigo-600 text-white rounded-lg"
+                      className="px-2.5 py-1 text-xs font-bold bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white rounded-lg shadow-xs active:scale-95 transition"
                     >
                       OK
                     </button>
@@ -123,7 +122,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                 ) : (
                   <button
                     onClick={() => handleStartEdit(cat.id, limit)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#7e7ef1] bg-[#7e7ef1]/10 border border-[#a0dafd]/30 rounded-lg hover:bg-[#7e7ef1]/20 transition"
                   >
                     <Edit2 className="w-3 h-3" />
                     <span>{limit > 0 ? formatRupiah(limit) : 'Atur Limit'}</span>

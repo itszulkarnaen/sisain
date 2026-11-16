@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { RecurringRule, Category } from '@/types';
-import { formatRupiah } from '@/lib/utils/currency';
+import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { Repeat, Plus, Trash2, Power, ShieldAlert } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -60,7 +60,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amount = parseInt(amountStr, 10) || 0;
+    const amount = parseRupiahInput(amountStr);
     if (!title || amount <= 0 || !categoryId) return;
 
     await onAddRule({
@@ -86,7 +86,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
         </div>
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 active:scale-95 transition"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#7e7ef1] text-white text-xs font-bold hover:bg-[#6c6ce8] ring-1 ring-[#a0dafd]/50 shadow-xs active:scale-95 transition"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Tambah</span>
@@ -97,7 +97,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
       {isAdding && (
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl p-4 border border-indigo-200 shadow-sm space-y-3 animate-in fade-in"
+          className="bg-white rounded-2xl p-4 border border-[#a0dafd]/50 shadow-sm space-y-3 animate-in fade-in"
         >
           <h3 className="text-xs font-bold text-slate-800">Daftarkan Tagihan Baru</h3>
           <div className="space-y-2">
@@ -111,11 +111,12 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
             />
             <div className="grid grid-cols-2 gap-2">
               <input
-                type="number"
-                placeholder="Nominal (Rp)"
+                type="text"
+                inputMode="numeric"
+                placeholder="Nominal (misal: Rp 1.500.000)"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 outline-hidden focus:border-indigo-500"
+                onChange={(e) => setAmountStr(formatRupiahInput(e.target.value))}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 outline-hidden focus:border-indigo-500 font-bold"
                 required
               />
               <select
@@ -155,7 +156,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded-xl font-bold shadow-xs hover:bg-indigo-700"
+              className="px-4 py-1.5 text-xs bg-[#7e7ef1] text-white rounded-xl font-bold shadow-xs hover:bg-[#6c6ce8] ring-1 ring-[#a0dafd]/30 active:scale-95 transition"
             >
               Simpan Otomasi
             </button>

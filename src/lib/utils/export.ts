@@ -6,7 +6,7 @@ import { formatRupiah } from './currency';
 export function exportTransactionsToExcel(
   transactions: Transaction[],
   categories: Category[],
-  fileName: string = 'NineToPay_Laporan_Keuangan.xlsx'
+  fileName: string = 'sisa.in_Laporan_Keuangan.xlsx'
 ) {
   const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
 
@@ -37,7 +37,7 @@ export function exportTransactionsToPDF(
 
   // Header
   doc.setFontSize(18);
-  doc.text('NineToPay — Laporan Keuangan', 14, 20);
+  doc.text('sisa.in — Laporan Keuangan', 14, 20);
 
   doc.setFontSize(10);
   doc.text(`Pemilik Akun: ${userName}`, 14, 28);
@@ -86,6 +86,6 @@ export function exportTransactionsToPDF(
     y += 7;
   }
 
-  doc.save('NineToPay_Laporan.pdf');
+  doc.save('sisa.in_Laporan.pdf');
 }
 

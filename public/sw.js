@@ -1,8 +1,10 @@
-const CACHE_NAME = 'ninetopay-v1';
+const CACHE_NAME = 'sisain-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon.svg',
+  '/sisain.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

@@ -67,7 +67,7 @@ export const TodayTransactions: React.FC<TodayTransactionsProps> = ({
                         {category?.name || 'Umum'}
                       </span>
                       {tx.is_recurring_instance && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-indigo-50 text-indigo-600 font-semibold border border-indigo-100">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#7e7ef1]/10 text-[#7e7ef1] font-semibold border border-[#a0dafd]/30">
                           Auto / Rutin
                         </span>
                       )}

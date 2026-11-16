@@ -10,6 +10,7 @@ interface ReportsViewProps {
   transactions: Transaction[];
   categories: Category[];
   isProOrTrial: boolean;
+  userName?: string;
   onLockedFeatureClick: () => void;
 }
 
@@ -17,6 +18,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   transactions,
   categories,
   isProOrTrial,
+  userName = 'Pengguna',
   onLockedFeatureClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +59,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       onLockedFeatureClick();
       return;
     }
-    exportTransactionsToPDF(transactions, categories, 'Usep', totalExpense, totalIncome);
+    exportTransactionsToPDF(transactions, categories, userName, totalExpense, totalIncome);
   };
 
   return (
@@ -124,7 +126,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       </div>
 
       {/* Export Section */}
-      <div className="bg-gradient-to-br from-indigo-50/70 to-blue-50/60 rounded-2xl p-4 border border-indigo-100 shadow-xs">
+      <div className="bg-gradient-to-br from-[#7e7ef1]/10 to-[#a0dafd]/15 rounded-2xl p-4 border border-[#a0dafd]/40 shadow-xs">
         <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="text-xs font-bold text-slate-900">Ekspor Laporan (Excel & PDF)</h3>

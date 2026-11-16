@@ -9,10 +9,10 @@ export const ServiceWorkerRegister = () => {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
-            console.log('NineToPay SW registered: ', registration.scope);
+            console.log('sisa.in SW registered: ', registration.scope);
           })
           .catch((err) => {
-            console.warn('NineToPay SW registration failed: ', err);
+            console.warn('sisa.in SW registration failed: ', err);
           });
       });
     }

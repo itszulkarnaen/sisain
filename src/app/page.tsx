@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie';
 import { initializeAppData } from '@/lib/db/initialData';
-import { syncPendingTransactions, SyncStatus } from '@/lib/db/sync';
+import { syncPendingTransactions, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
+import { DEFAULT_CATEGORIES } from '@/lib/constants/defaults';
 import { supabase } from '@/lib/supabase/client';
 import { calculateSafeToSpend } from '@/lib/utils/payday';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -20,7 +22,7 @@ import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal'
 import { BudgetView } from '@/components/views/BudgetView';
 import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
-import { TransactionType, Transaction } from '@/types';
+import { TransactionType, Transaction, Profile } from '@/types';
 import { format } from 'date-fns';
 import confetti from 'canvas-confetti';
 
@@ -33,34 +35,134 @@ export default function Home() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('SYNCED');
   const [authChecking, setAuthChecking] = useState(true);
 
-  // Auth gate: redirect to /login if not authenticated or not guest
+  // Auth gate & profile sync
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isGuest = localStorage.getItem('ninetopay_guest');
-      if (isGuest === 'true') {
-        setAuthChecking(false);
+    let isMounted = true;
+
+    async function checkAuthAndSync() {
+      if (typeof window !== 'undefined') {
+        const isGuest = localStorage.getItem('sisain_guest') || localStorage.getItem('ninetopay_guest');
+        if (isGuest === 'true') {
+          await initializeAppData().catch(console.error);
+          if (isMounted) setAuthChecking(false);
+          return;
+        }
+      }
+
+      if (!supabase) {
+        router.replace('/login');
         return;
+      }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.replace('/login');
+          return;
+        }
+
+        const user = session.user;
+        const userEmail = user.email || '';
+        const userFullName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          userEmail.split('@')[0] ||
+          'Pengguna';
+        const userAvatar =
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          null;
+
+        // 1. Fetch or create profile in Supabase
+        const { data: remoteProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        let finalProfile: Profile;
+
+        if (remoteProfile) {
+          finalProfile = {
+            ...remoteProfile,
+            full_name: (remoteProfile.full_name && remoteProfile.full_name !== 'Pengguna Baru' && remoteProfile.full_name !== 'Usep')
+              ? remoteProfile.full_name
+              : userFullName,
+            avatar_url: remoteProfile.avatar_url || userAvatar,
+          };
+
+          if (finalProfile.full_name !== remoteProfile.full_name || finalProfile.avatar_url !== remoteProfile.avatar_url) {
+            await supabase
+              .from('profiles')
+              .update({
+                full_name: finalProfile.full_name,
+                avatar_url: finalProfile.avatar_url,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', user.id);
+          }
+        } else {
+          finalProfile = {
+            id: user.id,
+            email: userEmail,
+            full_name: userFullName,
+            avatar_url: userAvatar,
+            monthly_salary: 0,
+            payday_date: 25,
+            subscription_status: 'TRIAL',
+            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            subscription_ends_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          await supabase.from('profiles').upsert(finalProfile, { onConflict: 'id' });
+
+          await supabase.from('wallets').upsert(
+            { user_id: user.id, name: 'Dompet Utama', is_default: true },
+            { onConflict: 'user_id' }
+          );
+        }
+
+        // 2. Clear old dummy data in Dexie if it still holds dummy 'user-usep-default' or another user
+        const existingLocalProfile = await db.profiles.toCollection().first();
+        if (!existingLocalProfile || existingLocalProfile.id !== user.id) {
+          await db.transaction('rw', [db.profiles, db.transactions, db.budgets, db.recurringRules], async () => {
+            await db.profiles.clear();
+            await db.transactions.where('user_id').equals('user-usep-default').delete();
+            await db.budgets.where('user_id').equals('user-usep-default').delete();
+            await db.recurringRules.where('user_id').equals('user-usep-default').delete();
+          });
+        }
+
+        // 3. Put authenticated user profile into Dexie
+        await db.profiles.put(finalProfile);
+
+        // 4. Seed default categories if empty
+        const catCount = await db.categories.count();
+        if (catCount === 0) {
+          await db.categories.bulkAdd(DEFAULT_CATEGORIES);
+        }
+
+        // 5. Hydrate real user data from Supabase Cloud
+        await hydrateFromCloud(user.id);
+
+      } catch (err) {
+        console.error('Error during auth check and sync:', err);
+      } finally {
+        if (isMounted) setAuthChecking(false);
       }
     }
 
-    if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-          router.replace('/login');
-        } else {
-          setAuthChecking(false);
-        }
-      });
-    } else {
-      router.replace('/login');
-    }
+    checkAuthAndSync();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
-  // Initialize DB seed
+  // Online/Offline sync listener
   useEffect(() => {
-    initializeAppData().catch(console.error);
-
-    // Online/Offline sync listener
     const handleOnline = () => {
       setSyncStatus('PENDING');
       syncPendingTransactions()
@@ -108,7 +210,7 @@ export default function Home() {
 
   // Safe-to-Spend Metric
   const safeToSpendSummary = useMemo(() => {
-    const salary = profile?.monthly_salary || 8000000;
+    const salary = profile?.monthly_salary ?? 0;
     const paydayDate = profile?.payday_date || 25;
 
     return calculateSafeToSpend({
@@ -199,21 +301,43 @@ export default function Home() {
 
   const handleSaveBudget = async (categoryId: string, monthlyLimit: number) => {
     const existing = await db.budgets.where('category_id').equals(categoryId).first();
+    const budgetId = existing ? existing.id : crypto.randomUUID();
+    const userId = profile?.id || 'user-usep-default';
+
     if (existing) {
       await db.budgets.update(existing.id, { monthly_limit: monthlyLimit });
     } else {
       await db.budgets.add({
-        id: crypto.randomUUID(),
-        user_id: profile?.id || 'user-usep-default',
+        id: budgetId,
+        user_id: userId,
         category_id: categoryId,
         monthly_limit: monthlyLimit,
         created_at: new Date().toISOString(),
       });
     }
+
+    if (supabase && userId !== 'user-usep-default') {
+      await supabase.from('budgets').upsert(
+        {
+          id: budgetId,
+          user_id: userId,
+          category_id: categoryId,
+          monthly_limit: monthlyLimit,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id, category_id' }
+      );
+    }
   };
 
   const handleToggleRecurringRule = async (ruleId: string, currentActive: boolean) => {
     await db.recurringRules.update(ruleId, { is_active: !currentActive });
+    if (supabase && profile?.id && profile.id !== 'user-usep-default') {
+      await supabase
+        .from('recurring_rules')
+        .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
+        .eq('id', ruleId);
+    }
   };
 
   const handleAddRecurringRule = async (data: {
@@ -222,9 +346,12 @@ export default function Home() {
     categoryId: string;
     executionDay: number;
   }) => {
-    await db.recurringRules.add({
-      id: crypto.randomUUID(),
-      user_id: profile?.id || 'user-usep-default',
+    const ruleId = crypto.randomUUID();
+    const userId = profile?.id || 'user-usep-default';
+
+    const newRule = {
+      id: ruleId,
+      user_id: userId,
       wallet_id: 'wallet-default',
       category_id: data.categoryId,
       title: data.title,
@@ -233,11 +360,42 @@ export default function Home() {
       is_active: true,
       last_executed_at: null,
       created_at: new Date().toISOString(),
-    });
+      updated_at: new Date().toISOString(),
+    };
+
+    await db.recurringRules.add(newRule);
+
+    if (supabase && userId !== 'user-usep-default') {
+      const { data: wallets } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+
+      let defaultWalletId = wallets?.[0]?.id;
+      if (!defaultWalletId) {
+        const { data: newWallet } = await supabase
+          .from('wallets')
+          .insert({ user_id: userId, name: 'Dompet Utama', is_default: true })
+          .select('id')
+          .single();
+        defaultWalletId = newWallet?.id;
+      }
+
+      if (defaultWalletId) {
+        await supabase.from('recurring_rules').insert({
+          ...newRule,
+          wallet_id: defaultWalletId,
+        });
+      }
+    }
   };
 
   const handleDeleteRecurringRule = async (ruleId: string) => {
     await db.recurringRules.delete(ruleId);
+    if (supabase && profile?.id && profile.id !== 'user-usep-default') {
+      await supabase.from('recurring_rules').delete().eq('id', ruleId);
+    }
   };
 
   const handleSaveProfile = async (data: {
@@ -252,6 +410,18 @@ export default function Home() {
         payday_date: data.paydayDate,
         updated_at: new Date().toISOString(),
       });
+
+      if (supabase && profile.id !== 'user-usep-default') {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: data.fullName,
+            monthly_salary: data.monthlySalary,
+            payday_date: data.paydayDate,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', profile.id);
+      }
     }
   };
 
@@ -260,8 +430,15 @@ export default function Home() {
       await supabase.auth.signOut().catch(() => {});
     }
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('sisain_guest');
       localStorage.removeItem('ninetopay_guest');
     }
+    await db.transaction('rw', [db.profiles, db.transactions, db.budgets, db.recurringRules], async () => {
+      await db.profiles.clear();
+      await db.transactions.clear();
+      await db.budgets.clear();
+      await db.recurringRules.clear();
+    });
     router.replace('/login');
   };
 
@@ -269,23 +446,30 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl animate-pulse">
-            9
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-[#7e7ef1]/25 animate-pulse border border-[#a0dafd]/50 bg-white">
+            <Image
+              src="/sisain.png"
+              alt="sisa.in logo"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
-          <p className="text-xs font-bold text-slate-500">Memuat NineToPay...</p>
+          <p className="text-xs font-bold text-slate-500">Memuat sisa.in...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 flex justify-center py-0 sm:py-6 selection:bg-indigo-100">
+    <main className="min-h-screen bg-slate-100 flex justify-center py-0 sm:py-6 selection:bg-[#7e7ef1]/20">
       {/* Mobile-First Frame Container (iPhone 14/15 size max-w-md) */}
       <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col relative overflow-hidden">
         
         {/* Top Header */}
         <TopHeader
-          userName={profile?.full_name || 'Usep'}
+          userName={profile?.full_name || 'Pengguna'}
           syncStatus={syncStatus}
           onSyncClick={() => {
             setSyncStatus('PENDING');
@@ -305,7 +489,13 @@ export default function Home() {
               {/* Hero Safe-to-Spend Card */}
               <SafeToSpendCard
                 summary={safeToSpendSummary}
-                onCardClick={() => setActiveTab('budget')}
+                onCardClick={() => {
+                  if (safeToSpendSummary.totalMonthlySalary <= 0) {
+                    setIsProfileModalOpen(true);
+                  } else {
+                    setActiveTab('budget');
+                  }
+                }}
               />
 
               {/* Upcoming Auto-Debit Banner */}
@@ -358,6 +548,7 @@ export default function Home() {
             <ReportsView
               transactions={transactions}
               categories={categories}
+              userName={profile?.full_name || 'Pengguna'}
               isProOrTrial={isProOrTrial}
               onLockedFeatureClick={() => setIsPaywallOpen(true)}
             />
