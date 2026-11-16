@@ -151,9 +151,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="text-xs font-black text-slate-900">Paket Sultan sisa.in</h3>
-                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                  VIP
-                </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 {status === 'ACTIVE'
@@ -184,11 +181,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1.5 rounded-xl border border-slate-100">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span>Bujet Kategori Bebas</span>
+            <span>Budget Kategori Bebas</span>
           </div>
           <div className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1.5 rounded-xl border border-slate-100">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span>Sinkron Cloud Realtime</span>
+            <span>Offline Mode</span>
           </div>
         </div>
 
@@ -198,7 +195,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           onClick={onOpenSultanModal}
           className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#7e7ef1] to-[#6060e8] hover:from-[#6c6ce8] hover:to-[#5050dc] text-white text-xs font-bold shadow-md shadow-[#7e7ef1]/20 active:scale-98 transition flex items-center justify-center gap-1.5"
         >
-          <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
           <span>
             {status === 'ACTIVE'
               ? 'Detail Langganan Sultan'
