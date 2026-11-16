@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { X, Lock, CheckCircle2, MessageCircle, Crown, ZoomIn, Maximize2 } from 'lucide-react';
+import { X, Lock, CheckCircle2, MessageCircle, Crown, ZoomIn, Maximize2, Download } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -29,6 +29,27 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
   adminWaNumber = '6281234567890',
 }) => {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+
+  const handleDownloadQr = async () => {
+    try {
+      const response = await fetch('/qr_pembayaran.jpg');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'QRIS_sisain_Rp10000.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      const link = document.createElement('a');
+      link.href = '/qr_pembayaran.jpg';
+      link.download = 'QRIS_sisain_Rp10000.jpg';
+      link.target = '_blank';
+      link.click();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -182,6 +203,16 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
               <p className="text-[10px] text-slate-400">
                 Screenshot atau scan langsung nominal <span className="font-bold text-slate-700">Rp10.000</span>.
               </p>
+
+              {/* Download QRIS button */}
+              <button
+                type="button"
+                onClick={handleDownloadQr}
+                className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:bg-slate-50 active:scale-95 text-[11px] font-semibold text-slate-700 transition"
+              >
+                <Download className="w-3.5 h-3.5 text-[#7e7ef1]" />
+                <span>Unduh Gambar QRIS</span>
+              </button>
             </div>
           </div>
 
@@ -245,6 +276,15 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
               <p className="text-[11px] text-slate-500 text-center mt-0.5">
                 Mendukung BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, ShopeePay, dsb.
               </p>
+
+              <button
+                type="button"
+                onClick={handleDownloadQr}
+                className="w-full mt-3 py-2.5 rounded-xl bg-[#7e7ef1] hover:bg-[#6b6be6] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-[#7e7ef1]/25 active:scale-98 transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Unduh Gambar QRIS</span>
+              </button>
             </div>
 
             <button
