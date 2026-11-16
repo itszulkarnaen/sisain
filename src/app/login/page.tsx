@@ -69,7 +69,7 @@ export default function LoginPage() {
           localStorage.removeItem('ninetopay_guest');
           router.replace('/');
         } else {
-          setSuccessMessage('Pendaftaran berhasil! Cek email lu untuk verifikasi link aktivasi.');
+          setSuccessMessage('Pendaftaran berhasil! Silakan periksa email kamu untuk tautan verifikasi aktivasi.');
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -150,7 +150,7 @@ export default function LoginPage() {
             sisa.in
           </h1>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            Atur sisa uang belanja lu biar aman sampai tanggal gajian berikutnya tanpa defisit.
+            Atur sisa uang belanja kamu agar aman sampai tanggal gajian berikutnya tanpa defisit.
           </p>
         </div>
 

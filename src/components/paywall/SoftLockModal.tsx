@@ -26,7 +26,7 @@ export const SoftLockModal: React.FC<SoftLockModalProps> = ({
 
   // WhatsApp deep link message
   const waMessage = encodeURIComponent(
-    `Halo bro, gue udah transfer Rp10.000 buat perpanjang Pro sisa.in.\nEmail Akun: ${userEmail}\nBukti transfer terlampir ya!`
+    `Halo admin sisa.in, saya sudah transfer Rp10.000 untuk perpanjang sisa.in Pro.\nEmail Akun: ${userEmail}\nBukti transfer terlampir ya!`
   );
   const waUrl = `https://wa.me/${adminWaNumber}?text=${waMessage}`;
 

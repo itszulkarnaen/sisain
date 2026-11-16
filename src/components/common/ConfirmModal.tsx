@@ -19,7 +19,7 @@ interface ConfirmModalProps {
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   title = 'Hapus Transaksi?',
-  message = 'Transaksi ini akan dihapus secara permanen dari catatan keuangan lu.',
+  message = 'Transaksi ini akan dihapus secara permanen dari catatan keuangan kamu.',
   confirmText = 'Ya, Hapus',
   cancelText = 'Batal',
   variant = 'danger',

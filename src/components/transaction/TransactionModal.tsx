@@ -338,18 +338,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           title="Hapus Transaksi?"
           message={
             <span>
-              Yakin mau hapus transaksi{' '}
+              Yakin ingin menghapus transaksi{' '}
               <strong className="text-slate-800 font-semibold">
                 {editingTransaction?.notes ? `"${editingTransaction.notes}"` : (categories.find(c => c.id === editingTransaction?.category_id)?.name || 'ini')}
               </strong>
               {editingTransaction ? (
                 <> sebesar <strong className="text-rose-600 font-semibold">{formatRupiah(editingTransaction.amount)}</strong>?</>
               ) : (
-                ' ini bro?'
+                ' ini?'
               )}
               <br />
               <span className="text-[11px] text-slate-400 mt-1 block">
-                Catatan ini bakal hilang permanen dari keuangan lu.
+                Catatan ini akan dihapus secara permanen dari riwayat keuangan kamu.
               </span>
             </span>
           }

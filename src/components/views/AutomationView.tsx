@@ -247,7 +247,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
         message={
           ruleToDelete ? (
             <span>
-              Yakin mau hapus tagihan rutin{' '}
+              Yakin ingin menghapus tagihan rutin{' '}
               <strong className="text-slate-800 font-semibold">"{ruleToDelete.title}"</strong>{' '}
               sebesar <strong className="text-rose-600 font-semibold">{formatRupiah(ruleToDelete.amount)}</strong>?
               <br />

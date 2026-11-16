@@ -81,7 +81,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-white/75 mt-1">
-              Tap kartu ini buat masukin nominal gaji & tanggal gajian lu
+              Ketuk kartu ini untuk mengatur nominal gaji & tanggal gajian kamu
             </p>
           </div>
         ) : (

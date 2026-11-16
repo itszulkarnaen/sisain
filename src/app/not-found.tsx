@@ -8,13 +8,13 @@ export default function NotFound() {
       </div>
       <h2 className="text-xl font-bold text-slate-900 mb-1">404 - Halaman Tidak Ditemukan</h2>
       <p className="text-xs text-slate-500 mb-6 max-w-xs">
-        Halaman yang lu tuju gak ada atau mungkin udah dipindahin bro.
+        Halaman yang kamu tuju tidak ditemukan atau sudah dipindahkan.
       </p>
       <Link
         href="/"
         className="px-5 py-2.5 rounded-2xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-md shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/40 active:scale-95 transition"
       >
-        Balik ke Beranda
+        Kembali ke Beranda
       </Link>
     </div>
   );

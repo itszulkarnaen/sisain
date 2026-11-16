@@ -163,7 +163,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Ketik nama panggilan lu..."
+                placeholder="Ketik nama panggilan kamu..."
                 className="w-full pl-3.5 pr-8 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 outline-hidden font-bold text-slate-900 transition bg-white"
                 required
               />
