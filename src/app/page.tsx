@@ -19,6 +19,7 @@ import { TodayTransactions } from '@/components/dashboard/TodayTransactions';
 import { TransactionModal } from '@/components/transaction/TransactionModal';
 import { SoftLockModal } from '@/components/paywall/SoftLockModal';
 import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal';
+import { PwaInstallModal } from '@/components/pwa/PwaInstallModal';
 import { BudgetView } from '@/components/views/BudgetView';
 import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
@@ -42,6 +43,43 @@ export default function Home() {
   const [ruleToMarkPaid, setRuleToMarkPaid] = useState<RecurringRule | null>(null);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
   const [googleAvatarUrl, setGoogleAvatarUrl] = useState<string | null>(null);
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  // Listen for beforeinstallprompt on Android/Chrome & handle first-time visitor PWA guide
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+    if (!isStandalone) {
+      try {
+        const dismissed = localStorage.getItem('sisain_pwa_prompt_dismissed');
+        if (!dismissed) {
+          const timer = setTimeout(() => {
+            setIsPwaModalOpen(true);
+          }, 2500);
+          return () => {
+            clearTimeout(timer);
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+          };
+        }
+      } catch {}
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   // Auth gate & profile sync
   useEffect(() => {
@@ -790,6 +828,7 @@ export default function Home() {
               onBack={() => setIsProfileViewOpen(false)}
               onOpenEdit={() => setIsProfileModalOpen(true)}
               onOpenSultanModal={() => setIsPaywallOpen(true)}
+              onOpenPwaGuide={() => setIsPwaModalOpen(true)}
               onLogout={handleLogout}
             />
           </div>
@@ -973,6 +1012,14 @@ export default function Home() {
           isLoading={isMarkingPaid}
           onConfirm={handleConfirmMarkAsPaid}
           onClose={() => setRuleToMarkPaid(null)}
+        />
+
+        {/* PWA Install Guideline Modal */}
+        <PwaInstallModal
+          isOpen={isPwaModalOpen}
+          onClose={() => setIsPwaModalOpen(false)}
+          deferredPrompt={deferredPrompt}
+          onInstallSuccess={() => setDeferredPrompt(null)}
         />
       </div>
     </main>

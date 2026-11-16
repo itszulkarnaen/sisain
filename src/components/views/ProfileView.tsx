@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronRight,
   CheckCircle2,
+  Smartphone,
 } from 'lucide-react';
 import { Profile } from '@/types';
 import { formatRupiah } from '@/lib/utils/currency';
@@ -27,6 +28,7 @@ interface ProfileViewProps {
   onBack: () => void;
   onOpenEdit: () => void;
   onOpenSultanModal: () => void;
+  onOpenPwaGuide?: () => void;
   onLogout?: () => void;
 }
 
@@ -36,6 +38,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onBack,
   onOpenEdit,
   onOpenSultanModal,
+  onOpenPwaGuide,
   onLogout,
 }) => {
   const status = profile?.subscription_status || 'TRIAL';
@@ -271,6 +274,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <Pencil className="w-4 h-4 text-[#7e7ef1]" />
           <span>Ubah Profil, Gaji & Tanggal Gajian</span>
         </button>
+
+        {onOpenPwaGuide && (
+          <button
+            type="button"
+            onClick={onOpenPwaGuide}
+            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#7e7ef1]/10 via-[#a0dafd]/15 to-[#7e7ef1]/10 hover:from-[#7e7ef1]/20 hover:to-[#a0dafd]/30 border border-[#a0dafd]/40 text-xs font-bold text-[#5050dc] shadow-xs active:scale-98 transition flex items-center justify-center gap-2"
+          >
+            <Smartphone className="w-4 h-4 text-[#7e7ef1]" />
+            <span>Panduan Pasang Aplikasi ke Layar HP</span>
+          </button>
+        )}
 
         {onLogout && (
           <button
