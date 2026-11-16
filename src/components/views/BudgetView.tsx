@@ -35,13 +35,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
         </div>
         <h2 className="text-lg font-bold text-slate-900 mb-1">Fitur Smart Budgeting Terkunci</h2>
         <p className="text-xs text-slate-500 max-w-xs mx-auto mb-5 leading-relaxed">
-          Masa Free Trial 30 hari telah berakhir. Aktifkan paket Pro Rp10.000/bulan untuk membuka kembali alokasi bujet per kategori.
+          Masa Free Trial 30 hari telah berakhir. Aktifkan paket Sultan Rp10.000/bulan untuk membuka kembali alokasi bujet per kategori.
         </p>
         <button
           onClick={onLockedFeatureClick}
           className="px-6 py-3 rounded-full bg-[#7e7ef1] text-white font-bold text-xs shadow-md hover:bg-[#6c6ce8] ring-1 ring-[#a0dafd]/40 transition"
         >
-          Buka Kunci Fitur Pro (Rp10.000)
+          Buka Kunci Fitur Sultan (Rp10.000)
         </button>
       </div>
     );

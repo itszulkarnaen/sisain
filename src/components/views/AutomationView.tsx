@@ -89,13 +89,13 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
         </div>
         <h2 className="text-lg font-bold text-slate-900 mb-1">Monthly Fee Automation Terkunci</h2>
         <p className="text-xs text-slate-500 max-w-xs mx-auto mb-5 leading-relaxed">
-          Semua jadwal tagihan rutin di-pause karena masa trial berakhir. Aktifkan Pro Rp10.000/bulan untuk otomatisasi eksekusi server tanpa batas.
+          Semua jadwal tagihan rutin di-pause karena masa trial berakhir. Aktifkan Sultan Rp10.000/bulan untuk otomatisasi eksekusi server tanpa batas.
         </p>
         <button
           onClick={onLockedFeatureClick}
           className="px-6 py-3 rounded-full bg-indigo-600 text-white font-bold text-xs shadow-md hover:bg-indigo-700 transition"
         >
-          Buka Kunci Fitur Pro (Rp10.000)
+          Buka Kunci Fitur Sultan (Rp10.000)
         </button>
       </div>
     );

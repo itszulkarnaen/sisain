@@ -7,7 +7,6 @@ import {
   User,
   Calendar,
   CreditCard,
-  Sparkles,
   Save,
   CalendarCheck,
   HourglassCog,
@@ -47,7 +46,7 @@ interface ProfileSettingsModalProps {
     paydayDate: number;
     avatarUrl?: string | null;
   }) => Promise<void>;
-  onOpenPaywall: () => void;
+  onOpenPaywall?: () => void;
   onLogout?: () => void;
 }
 
@@ -57,8 +56,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   profile,
   googleAvatarUrl,
   onSaveProfile,
-  onOpenPaywall,
-  onLogout,
 }) => {
   const resolvedGoogleAvatar =
     googleAvatarUrl ||
@@ -145,7 +142,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     }
   };
 
-  const status = profile?.subscription_status || 'TRIAL';
   const cycleInfo = getPaydayCycle(paydayDate);
   const formattedNextDate = format(cycleInfo.nextPaydayDate, 'd MMMM yyyy', { locale: id });
 
@@ -157,39 +153,12 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3" />
 
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-slate-900">Pengaturan Akun & Gaji</h2>
+          <h2 className="text-base font-bold text-slate-900">Ubah Profil & Data Gaji</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"
           >
             <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Subscription Status Card */}
-        <div className="p-3 rounded-2xl bg-[#7e7ef1]/10 border border-[#a0dafd]/40 mb-3 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold tracking-wider text-[#7e7ef1] uppercase">
-              Status Keanggotaan
-            </span>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs font-extrabold text-slate-900">
-                {status === 'TRIAL' && 'Free Trial (30 Hari)'}
-                {status === 'ACTIVE' && 'sisa.in Pro Aktif ✨'}
-                {status === 'EXPIRED' && 'Paket Pro Berakhir'}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onOpenPaywall();
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-xs ring-1 ring-[#a0dafd]/40 active:scale-95 transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-            <span>{status === 'ACTIVE' ? 'Detail Pro' : 'Upgrade Pro'}</span>
           </button>
         </div>
 
@@ -231,7 +200,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               {/* List Pilihan Avatar */}
               <div className="flex-1 overflow-hidden">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 px-0.5 no-scrollbar">
-                  {/* Opsi Foto Akun Google (Hanya jika user login via Google) */}
+                  {/* Opsi Foto Akun Google (Hanya jika user punya foto Google) */}
                   {resolvedGoogleAvatar && (
                     <button
                       type="button"
@@ -463,6 +432,14 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           {/* Action Buttons */}
           <div className="pt-2 flex items-center gap-2">
             <button
+              type="button"
+              onClick={onClose}
+              className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition active:scale-98"
+            >
+              Batal
+            </button>
+
+            <button
               type="submit"
               disabled={isSaving}
               className="flex-1 py-3 px-4 rounded-xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-xs active:scale-98 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
@@ -470,16 +447,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               <Save className="w-4 h-4" />
               <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
             </button>
-
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-bold transition active:scale-98"
-              >
-                Keluar
-              </button>
-            )}
           </div>
         </form>
       </div>

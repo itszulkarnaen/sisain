@@ -225,7 +225,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <span>Ekspor</span>
           {!isProOrTrial && (
             <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-700 ml-0.5">
-              PRO
+              SULTAN
             </span>
           )}
         </button>
@@ -745,7 +745,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center gap-2">
                 <span className="text-amber-500 text-xs">⭐</span>
                 <p className="text-[11px] text-amber-700 font-medium">
-                  Fitur ekspor laporan tersedia untuk pengguna <span className="font-bold">PRO</span>.
+                  Fitur ekspor laporan tersedia untuk pengguna <span className="font-bold">Sultan</span>.
                 </p>
               </div>
             )}

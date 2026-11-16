@@ -22,10 +22,11 @@ import { ProfileSettingsModal } from '@/components/profile/ProfileSettingsModal'
 import { BudgetView } from '@/components/views/BudgetView';
 import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
+import { ProfileView } from '@/components/views/ProfileView';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { formatRupiah } from '@/lib/utils/currency';
 import { TransactionType, Transaction, Profile, Category, RecurringRule } from '@/types';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import confetti from 'canvas-confetti';
 
 export default function Home() {
@@ -35,6 +36,7 @@ export default function Home() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isProfileViewOpen, setIsProfileViewOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('SYNCED');
   const [authChecking, setAuthChecking] = useState(true);
   const [ruleToMarkPaid, setRuleToMarkPaid] = useState<RecurringRule | null>(null);
@@ -737,13 +739,25 @@ export default function Home() {
               .catch(() => setSyncStatus('ERROR'));
           }}
           onAvatarClick={() => {
-            setIsProfileModalOpen(true);
+            setIsProfileViewOpen(true);
           }}
         />
 
-        {/* Tab Body Content */}
-        <div className="flex-1 px-4 overflow-y-auto">
-          {activeTab === 'home' && (
+        {/* Tab Body Content or Profile View */}
+        {isProfileViewOpen ? (
+          <div className="flex-1 px-4 overflow-y-auto pt-2">
+            <ProfileView
+              profile={profile || null}
+              googleAvatarUrl={googleAvatarUrl}
+              onBack={() => setIsProfileViewOpen(false)}
+              onOpenEdit={() => setIsProfileModalOpen(true)}
+              onOpenSultanModal={() => setIsPaywallOpen(true)}
+              onLogout={handleLogout}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 px-4 overflow-y-auto">
+            {activeTab === 'home' && (
             <div className="space-y-4 pt-1">
               {/* Hero Safe-to-Spend Card */}
               <SafeToSpendCard
@@ -824,11 +838,15 @@ export default function Home() {
             />
           )}
         </div>
+      )}
 
         {/* Floating Dock Bottom Navigation */}
         <BottomNav
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setIsProfileViewOpen(false);
+            setActiveTab(tab);
+          }}
           onOpenAddModal={handleOpenAddModal}
         />
 
@@ -845,11 +863,18 @@ export default function Home() {
           onDelete={handleDeleteTransaction}
         />
 
-        {/* Paywall Soft-Lock Modal */}
+        {/* Sultan / Membership Modal */}
         <SoftLockModal
           isOpen={isPaywallOpen}
           onClose={() => setIsPaywallOpen(false)}
-          userEmail={profile?.email || 'usep@kantor.com'}
+          status={profile?.subscription_status || 'TRIAL'}
+          trialDaysLeft={
+            profile?.trial_ends_at
+              ? Math.max(0, differenceInCalendarDays(parseISO(profile.trial_ends_at), new Date()))
+              : 30
+          }
+          subscriptionEndsAt={profile?.subscription_ends_at}
+          userEmail={profile?.email || 'user@sisa.in'}
           adminWaNumber={process.env.NEXT_PUBLIC_ADMIN_WA_NUMBER || '6281234567890'}
           bcaNumber={process.env.NEXT_PUBLIC_PAYMENT_BCA_NO || '1234567890'}
           bcaName={process.env.NEXT_PUBLIC_PAYMENT_BCA_NAME || 'Zul'}
