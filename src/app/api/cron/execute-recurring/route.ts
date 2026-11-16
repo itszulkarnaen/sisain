@@ -40,7 +40,7 @@ async function handleCronExecution(req: NextRequest) {
     // (atau jatuh tempo di tanggal > hari ini jika hari ini adalah hari terakhir bulan)
     let query = supabaseAdmin
       .from('recurring_rules')
-      .select('*, profiles!inner(subscription_status, trial_ends_at, subscription_ends_at)')
+      .select('*, profiles!inner(subscription_status, trial_ends_at, subscription_ends_at), categories(type)')
       .eq('is_active', true);
 
     if (isLastDayOfMonth) {
@@ -88,6 +88,10 @@ async function handleCronExecution(req: NextRequest) {
         continue;
       }
 
+      // Cek apakah kategori rule ini merupakan INCOME atau EXPENSE
+      const catType = (rule.categories as { type?: string } | null)?.type === 'INCOME' ? 'INCOME' : 'EXPENSE';
+      const notesPrefix = catType === 'INCOME' ? '[Pemasukan Rutin]' : '[Tagihan]';
+
       // Insert transaksi baru ke PostgreSQL
       const transactionId = crypto.randomUUID();
       const { error: txError } = await supabaseAdmin.from('transactions').insert({
@@ -96,9 +100,9 @@ async function handleCronExecution(req: NextRequest) {
         wallet_id: rule.wallet_id,
         category_id: rule.category_id,
         amount: rule.amount,
-        type: 'EXPENSE',
+        type: catType,
         transaction_date: todayDateStr,
-        notes: `[Tagihan] ${rule.title}`,
+        notes: `${notesPrefix} ${rule.title}`,
         is_recurring_instance: true,
         recurring_rule_id: rule.id,
       });

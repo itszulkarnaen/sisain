@@ -297,8 +297,8 @@ export default function Home() {
     }));
   }, [categories, budgets, categorySpendingMap]);
 
-  // Nearest active unpaid recurring rule for the reminder banner
-  const nearestRecurringInfo = useMemo(() => {
+  // Upcoming recurring rules and summary info for the reminder banner
+  const upcomingRecurringSummary = useMemo(() => {
     if (!recurringRules || recurringRules.length === 0) return null;
 
     const now = new Date();
@@ -323,6 +323,8 @@ export default function Home() {
       );
 
       const isPaidThisMonth = isPaidByLastExecuted || isPaidByTransaction;
+      const cat = categories.find((c) => c.id === rule.category_id);
+      const isIncome = cat?.type === 'INCOME';
 
       let dueDate: Date;
       let daysRemaining: number;
@@ -337,6 +339,7 @@ export default function Home() {
 
       return {
         rule,
+        isIncome,
         isPaidThisMonth,
         dueDate,
         daysRemaining,
@@ -347,17 +350,33 @@ export default function Home() {
     const unpaidRules = rulesWithDetails.filter((item) => !item.isPaidThisMonth);
     if (unpaidRules.length > 0) {
       unpaidRules.sort((a, b) => a.daysRemaining - b.daysRemaining);
-      return unpaidRules[0];
+      const nearest = unpaidRules[0];
+      const totalAmount = unpaidRules.reduce((sum, item) => sum + item.rule.amount, 0);
+
+      return {
+        nearestRule: nearest.rule,
+        nearestDaysRemaining: nearest.daysRemaining,
+        nearestIsIncome: nearest.isIncome,
+        totalUpcomingCount: unpaidRules.length,
+        totalUpcomingAmount: totalAmount,
+      };
     }
 
     // If all bills are paid this month, only show if next month's bill is very near (<= 3 days)
     const nextRules = [...rulesWithDetails].sort((a, b) => a.daysRemaining - b.daysRemaining);
     if (nextRules.length > 0 && nextRules[0].daysRemaining <= 3) {
-      return nextRules[0];
+      const nearest = nextRules[0];
+      return {
+        nearestRule: nearest.rule,
+        nearestDaysRemaining: nearest.daysRemaining,
+        nearestIsIncome: nearest.isIncome,
+        totalUpcomingCount: 1,
+        totalUpcomingAmount: nearest.rule.amount,
+      };
     }
 
     return null;
-  }, [recurringRules, transactions]);
+  }, [recurringRules, transactions, categories]);
 
   // Handlers
   const handleOpenAddModal = () => {
@@ -559,6 +578,11 @@ export default function Home() {
       const txId = crypto.randomUUID();
       const validCategoryId = LEGACY_CATEGORY_ID_MAP[ruleToMarkPaid.category_id] || ruleToMarkPaid.category_id;
 
+      const targetCat = categories.find((c) => c.id === validCategoryId);
+      const isIncome = targetCat?.type === 'INCOME';
+      const txType: TransactionType = isIncome ? 'INCOME' : 'EXPENSE';
+      const notesPrefix = isIncome ? '[Pemasukan Rutin]' : '[Tagihan]';
+
       // 1. Save Transaction to local Dexie
       const newTx: Transaction = {
         id: txId,
@@ -566,9 +590,9 @@ export default function Home() {
         wallet_id: ruleToMarkPaid.wallet_id || 'wallet-default',
         category_id: validCategoryId,
         amount: ruleToMarkPaid.amount,
-        type: 'EXPENSE',
+        type: txType,
         transaction_date: todayStr,
-        notes: `[Tagihan] ${ruleToMarkPaid.title}`,
+        notes: `${notesPrefix} ${ruleToMarkPaid.title}`,
         is_recurring_instance: true,
         recurring_rule_id: ruleToMarkPaid.id,
         created_at: new Date().toISOString(),
@@ -598,9 +622,9 @@ export default function Home() {
           wallet_id: defaultWalletId,
           category_id: validCategoryId,
           amount: ruleToMarkPaid.amount,
-          type: 'EXPENSE',
+          type: txType,
           transaction_date: todayStr,
-          notes: `[Tagihan] ${ruleToMarkPaid.title}`,
+          notes: `${notesPrefix} ${ruleToMarkPaid.title}`,
           is_recurring_instance: true,
           recurring_rule_id: ruleToMarkPaid.id,
         });
@@ -724,11 +748,14 @@ export default function Home() {
                 }}
               />
 
-              {/* Upcoming Bill Reminder Banner */}
-              {nearestRecurringInfo && (
+              {/* Upcoming Bill / Income Reminder Banner */}
+              {upcomingRecurringSummary && (
                 <UpcomingRecurringBanner
-                  rule={nearestRecurringInfo.rule}
-                  daysRemaining={nearestRecurringInfo.daysRemaining}
+                  rule={upcomingRecurringSummary.nearestRule}
+                  daysRemaining={upcomingRecurringSummary.nearestDaysRemaining}
+                  totalUpcomingCount={upcomingRecurringSummary.totalUpcomingCount}
+                  totalUpcomingAmount={upcomingRecurringSummary.totalUpcomingAmount}
+                  isIncome={upcomingRecurringSummary.nearestIsIncome}
                   onClick={() => setActiveTab('automation')}
                   onMarkAsPaid={(rule) => setRuleToMarkPaid(rule)}
                 />
@@ -831,30 +858,45 @@ export default function Home() {
           onLogout={handleLogout}
         />
 
-        {/* Confirmation Modal for Marking Bill as Paid */}
+        {/* Confirmation Modal for Marking Bill as Paid / Received */}
         <ConfirmModal
           isOpen={Boolean(ruleToMarkPaid)}
-          title="Tandai Sudah Dibayar?"
-          message={
-            ruleToMarkPaid ? (
-              <span>
-                Catat pembayaran tagihan{' '}
-                <strong className="text-slate-800 font-semibold">"{ruleToMarkPaid.title}"</strong>{' '}
-                sebesar{' '}
-                <strong className="text-rose-600 font-semibold">
-                  {formatRupiah(ruleToMarkPaid.amount)}
-                </strong>{' '}
-                ke pengeluaran hari ini?
-                <br />
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  Transaksi pengeluaran baru akan dicatat dan pengingat bulan ini akan selesai.
-                </span>
-              </span>
-            ) : ''
+          title={
+            categories.find((c) => c.id === ruleToMarkPaid?.category_id)?.type === 'INCOME'
+              ? 'Tandai Sudah Masuk?'
+              : 'Tandai Sudah Dibayar?'
           }
-          confirmText="Ya, Sudah Bayar"
+          message={
+            ruleToMarkPaid ? (() => {
+              const isIncome = categories.find((c) => c.id === ruleToMarkPaid.category_id)?.type === 'INCOME';
+              return (
+                <span>
+                  {isIncome ? 'Catat pemasukan rutin ' : 'Catat pembayaran tagihan '}
+                  <strong className="text-slate-800 font-semibold">"{ruleToMarkPaid.title}"</strong>{' '}
+                  sebesar{' '}
+                  <strong className={isIncome ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
+                    {formatRupiah(ruleToMarkPaid.amount)}
+                  </strong>{' '}
+                  ke {isIncome ? 'pemasukan' : 'pengeluaran'} hari ini?
+                  <br />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Transaksi {isIncome ? 'pemasukan' : 'pengeluaran'} baru akan dicatat dan jadwal bulan ini akan selesai.
+                  </span>
+                </span>
+              );
+            })() : ''
+          }
+          confirmText={
+            categories.find((c) => c.id === ruleToMarkPaid?.category_id)?.type === 'INCOME'
+              ? 'Ya, Sudah Masuk'
+              : 'Ya, Sudah Bayar'
+          }
           cancelText="Batal"
-          variant="primary"
+          variant={
+            categories.find((c) => c.id === ruleToMarkPaid?.category_id)?.type === 'INCOME'
+              ? 'primary'
+              : 'warning'
+          }
           isLoading={isMarkingPaid}
           onConfirm={handleConfirmMarkAsPaid}
           onClose={() => setRuleToMarkPaid(null)}

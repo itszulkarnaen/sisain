@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RecurringRule, Category, Transaction } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, ChevronDown, X, Check } from 'lucide-react';
@@ -41,10 +41,18 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
+
+  // Filter out 'Gaji' as monthly salary is managed in Profile Settings
+  const selectableCategories = useMemo<Category[]>(() => {
+    return categories.filter((c: Category) => c.name.trim().toLowerCase() !== 'gaji');
+  }, [categories]);
+
   const defaultCategory =
-    categories.find((c) => c.name.toLowerCase().includes('tagihan')) ||
-    categories.find((c) => c.type === 'EXPENSE') ||
+    selectableCategories.find((c: Category) => c.name.toLowerCase().includes('tagihan')) ||
+    selectableCategories.find((c: Category) => c.type === 'EXPENSE') ||
+    selectableCategories[0] ||
     categories[0];
+
   const [categoryId, setCategoryId] = useState(defaultCategory?.id || '');
   const [executionDay, setExecutionDay] = useState(1);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -53,14 +61,14 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (!categoryId && categories.length > 0) {
+    if (!categoryId && selectableCategories.length > 0) {
       const def =
-        categories.find((c) => c.name.toLowerCase().includes('tagihan')) ||
-        categories.find((c) => c.type === 'EXPENSE') ||
-        categories[0];
+        selectableCategories.find((c: Category) => c.name.toLowerCase().includes('tagihan')) ||
+        selectableCategories.find((c: Category) => c.type === 'EXPENSE') ||
+        selectableCategories[0];
       if (def) setCategoryId(def.id);
     }
-  }, [categories, categoryId]);
+  }, [selectableCategories, categoryId]);
 
   const handleConfirmDelete = async () => {
     if (!ruleToDelete) return;
@@ -131,138 +139,165 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
       </div>
 
       {/* Form Tambah Rule Baru */}
-      {isAdding && (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-3xl p-5 border border-[#a0dafd]/60 shadow-lg shadow-indigo-100/50 space-y-4 animate-in fade-in"
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <h3 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#7e7ef1]" />
-              Daftarkan Tagihan Baru
-            </h3>
-            <button
-              type="button"
-              onClick={() => setIsAdding(false)}
-              className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {isAdding && (() => {
+        const isCurrentIncome = (categoryMap.get(categoryId) || defaultCategory)?.type === 'INCOME';
 
-          <div className="space-y-3">
-            {/* Nama Tagihan */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 mb-1 block">
-                Nama Tagihan
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: Sewa Kosan, Wi-Fi Indihome, Spotify"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-bold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
-                required
-              />
-            </div>
-
-            {/* Nominal Tagihan */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 mb-1 block">
-                Nominal Bulanan
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="Contoh: Rp 1.500.000"
-                value={amountStr}
-                onChange={(e) => setAmountStr(formatRupiahInput(e.target.value))}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-extrabold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
-                required
-              />
-            </div>
-
-            {/* Kategori Pos Anggaran Picker Button */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 mb-1 block">
-                Kategori Pos Anggaran
-              </label>
+        return (
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-3xl p-5 border border-[#a0dafd]/60 shadow-lg shadow-indigo-100/50 space-y-4 animate-in fade-in"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                <span className={clsx('w-2 h-2 rounded-full', isCurrentIncome ? 'bg-emerald-500' : 'bg-[#7e7ef1]')} />
+                {isCurrentIncome ? 'Daftarkan Pemasukan Rutin Baru' : 'Daftarkan Tagihan Baru'}
+              </h3>
               <button
                 type="button"
-                onClick={() => setIsCategoryPickerOpen(true)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                onClick={() => setIsAdding(false)}
+                className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition cursor-pointer"
               >
-                <div className="flex items-center gap-2.5 overflow-hidden">
-                  <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0">
-                    <CategoryIcon
-                      icon={(categoryMap.get(categoryId) || defaultCategory)?.icon}
-                      name={(categoryMap.get(categoryId) || defaultCategory)?.name}
-                      size={28}
-                      className="w-7 h-7 object-contain"
-                    />
-                  </div>
-                  <div className="truncate">
-                    <span className="text-xs font-extrabold text-slate-900 block truncate">
-                      {(categoryMap.get(categoryId) || defaultCategory)?.name || 'Pilih Kategori'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Ketuk untuk mengganti pos
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
-                  Ganti
-                </span>
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Tanggal Eksekusi Date Picker Button */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 mb-1 block">
-                Tanggal Eksekusi Bulanan
-              </label>
+            <div className="space-y-3">
+              {/* Nama Tagihan / Pemasukan */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                  {isCurrentIncome ? 'Nama Pemasukan Rutin' : 'Nama Tagihan'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    isCurrentIncome
+                      ? 'Contoh: Freelance Retainer, Sewa Properti, Dividen'
+                      : 'Contoh: Sewa Kosan, Wi-Fi Indihome, Spotify'
+                  }
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-bold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
+                  required
+                />
+              </div>
+
+              {/* Nominal Tagihan / Pemasukan */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                  {isCurrentIncome ? 'Nominal Pemasukan' : 'Nominal Bulanan'}
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Contoh: Rp 1.500.000"
+                  value={amountStr}
+                  onChange={(e) => setAmountStr(formatRupiahInput(e.target.value))}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-extrabold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
+                  required
+                />
+              </div>
+
+              {/* Kategori Pos Anggaran Picker Button */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                  Kategori Pos Anggaran
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryPickerOpen(true)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0">
+                      <CategoryIcon
+                        icon={(categoryMap.get(categoryId) || defaultCategory)?.icon}
+                        name={(categoryMap.get(categoryId) || defaultCategory)?.name}
+                        size={28}
+                        className="w-7 h-7 object-contain"
+                      />
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-extrabold text-slate-900 block truncate">
+                          {(categoryMap.get(categoryId) || defaultCategory)?.name || 'Pilih Kategori'}
+                        </span>
+                        <span
+                          className={clsx(
+                            'text-[9px] font-bold px-1.5 py-0.2 rounded-sm border',
+                            isCurrentIncome
+                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+                          )}
+                        >
+                          {isCurrentIncome ? 'Pemasukan' : 'Pengeluaran'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        Ketuk untuk mengganti pos
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
+                    Ganti
+                  </span>
+                </button>
+              </div>
+
+              {/* Tanggal Eksekusi Date Picker Button */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                  {isCurrentIncome ? 'Tanggal Pemasukan Bulanan' : 'Tanggal Eksekusi Bulanan'}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen(true)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#a0dafd]/25 border border-[#a0dafd]/50 flex items-center justify-center text-[#7e7ef1] shrink-0 shadow-2xs">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block">
+                        Setiap Tanggal {executionDay}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {isCurrentIncome
+                          ? `Otomatis dicatat masuk tiap tgl ${executionDay} pukul 00:05 WIB`
+                          : `Dipotong otomatis tiap tgl ${executionDay} pukul 00:05 WIB`}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
+                    Pilih Tanggal
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => setIsDatePickerOpen(true)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                onClick={() => setIsAdding(false)}
+                className="px-4 py-2 text-xs text-slate-500 font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#a0dafd]/25 border border-[#a0dafd]/50 flex items-center justify-center text-[#7e7ef1] shrink-0 shadow-2xs">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-extrabold text-slate-900 block">
-                      Setiap Tanggal {executionDay}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Dipotong otomatis tiap tgl {executionDay} pukul 00:05 WIB
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
-                  Pilih Tanggal
-                </span>
+                Batal
+              </button>
+              <button
+                type="submit"
+                className={clsx(
+                  'px-5 py-2 text-xs text-white rounded-xl font-bold shadow-md active:scale-95 transition cursor-pointer',
+                  isCurrentIncome
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25'
+                    : 'bg-[#7e7ef1] hover:bg-[#6c6ce8] shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/40'
+                )}
+              >
+                {isCurrentIncome ? 'Simpan Pemasukan Rutin' : 'Simpan Tagihan'}
               </button>
             </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setIsAdding(false)}
-              className="px-4 py-2 text-xs text-slate-500 font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-xs bg-[#7e7ef1] text-white rounded-xl font-bold shadow-md shadow-[#7e7ef1]/25 hover:bg-[#6c6ce8] ring-1 ring-[#a0dafd]/40 active:scale-95 transition cursor-pointer"
-            >
-              Simpan Otomasi
-            </button>
-          </div>
-        </form>
-      )}
+          </form>
+        );
+      })()}
 
       {/* List Tagihan */}
       {recurringRules.length === 0 ? (
@@ -277,6 +312,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
         <div className="space-y-2.5">
           {recurringRules.map((rule) => {
             const category = categoryMap.get(rule.category_id);
+            const isRuleIncome = category?.type === 'INCOME';
             const currentMonthPrefix = format(new Date(), 'yyyy-MM');
             const isPaidThisMonth =
               (rule.last_executed_at && rule.last_executed_at.startsWith(currentMonthPrefix)) ||
@@ -300,13 +336,25 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     <CategoryIcon icon={category?.icon || '🔁'} name={category?.name || rule.title} size={40} className="w-10 h-10 object-contain" />
                   </div>
                   <div className="truncate">
-                    <h3 className="text-xs font-bold text-slate-800 truncate">{rule.title}</h3>
-                    <p className="text-[11px] text-slate-400">
-                      Tiap tgl {rule.execution_day} • {formatRupiah(rule.amount)}
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-xs font-bold text-slate-800 truncate">{rule.title}</h3>
+                      <span
+                        className={clsx(
+                          'text-[9px] font-bold px-1.5 py-0.2 rounded-sm border shrink-0',
+                          isRuleIncome
+                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                            : 'text-slate-600 bg-slate-100 border-slate-200'
+                        )}
+                      >
+                        {isRuleIncome ? 'Pemasukan' : 'Tagihan'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Tiap tgl {rule.execution_day} • {isRuleIncome ? '+' : '-'}{formatRupiah(rule.amount)}
                     </p>
                     {isPaidThisMonth && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full mt-1">
-                        ✓ Lunas bulan ini
+                        {isRuleIncome ? '✓ Sudah cair bulan ini' : '✓ Lunas bulan ini'}
                       </span>
                     )}
                   </div>
@@ -317,11 +365,16 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onMarkAsPaid(rule)}
-                      title="Tandai sudah dibayar"
-                      className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-700 text-xs font-bold flex items-center gap-1 transition cursor-pointer border border-amber-200/60"
+                      title={isRuleIncome ? 'Tandai sudah masuk' : 'Tandai sudah dibayar'}
+                      className={clsx(
+                        'px-2.5 py-1.5 rounded-xl active:scale-95 text-xs font-bold flex items-center gap-1 transition cursor-pointer border',
+                        isRuleIncome
+                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/70'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200/60'
+                      )}
                     >
                       <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Bayar</span>
+                      <span>{isRuleIncome ? 'Masuk' : 'Bayar'}</span>
                     </button>
                   )}
                   <button
@@ -357,8 +410,8 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
           <div className="relative w-full max-w-xs bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 z-10 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <div>
-                <h3 className="text-xs font-extrabold text-slate-900 leading-tight">Pilih Kategori Tagihan</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Pilih pos anggaran untuk pengeluaran ini</p>
+                <h3 className="text-xs font-extrabold text-slate-900 leading-tight">Pilih Kategori</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Pilih pos pengeluaran atau pemasukan rutin</p>
               </div>
               <button
                 type="button"
@@ -370,7 +423,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto py-1">
-              {categories.map((c) => {
+              {selectableCategories.map((c: Category) => {
                 const isSelected = c.id === categoryId;
                 return (
                   <button
