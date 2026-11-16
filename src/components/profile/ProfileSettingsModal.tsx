@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Calendar, CreditCard, Sparkles, Save, CalendarCheck } from 'lucide-react';
+import { X, User, Calendar, CreditCard, Sparkles, Save, CalendarCheck, HourglassCog, BriefcaseBusiness, CalendarCog } from 'lucide-react';
 import { Profile } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { getPaydayCycle } from '@/lib/utils/payday';
@@ -224,7 +224,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-base">🗓️</span>
+                  <HourglassCog className="w-5 h-5 text-[#7e7ef1]" />
                   {paydayOption === 'LAST_DAY' && (
                     <span className="w-2 h-2 rounded-full bg-[#7e7ef1]" />
                   )}
@@ -247,7 +247,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-base">💼</span>
+                  <BriefcaseBusiness className="w-5 h-5 text-[#7e7ef1]" />
                   {paydayOption === 'DAY_25' && (
                     <span className="w-2 h-2 rounded-full bg-[#7e7ef1]" />
                   )}
@@ -270,7 +270,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-base">✨</span>
+                  <CalendarCog className="w-5 h-5 text-[#7e7ef1]" />
                   {paydayOption === 'CUSTOM' && (
                     <span className="w-2 h-2 rounded-full bg-[#7e7ef1]" />
                   )}
