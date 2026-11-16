@@ -25,6 +25,7 @@ import { AutomationView } from '@/components/views/AutomationView';
 import { ReportsView } from '@/components/views/ReportsView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
+import { DesktopNoticeBanner } from '@/components/common/DesktopNoticeBanner';
 import { formatRupiah } from '@/lib/utils/currency';
 import { TransactionType, Transaction, Profile, Category, RecurringRule, Budget } from '@/types';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
@@ -799,7 +800,10 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 flex justify-center py-0 sm:py-6 selection:bg-[#7e7ef1]/20">
+    <main className="min-h-screen bg-slate-100 flex flex-col items-center justify-center py-0 sm:py-6 selection:bg-[#7e7ef1]/20">
+      {/* Desktop Notice Banner */}
+      <DesktopNoticeBanner />
+
       {/* Mobile-First Frame Container (iPhone 14/15 size max-w-md) */}
       <div className="w-full max-w-md bg-[#FAFBFD] min-h-screen sm:min-h-[844px] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200/80 flex flex-col relative overflow-hidden">
         
