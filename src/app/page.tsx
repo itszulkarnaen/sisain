@@ -39,6 +39,7 @@ export default function Home() {
   const [authChecking, setAuthChecking] = useState(true);
   const [ruleToMarkPaid, setRuleToMarkPaid] = useState<RecurringRule | null>(null);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+  const [googleAvatarUrl, setGoogleAvatarUrl] = useState<string | null>(null);
 
   // Auth gate & profile sync
   useEffect(() => {
@@ -77,6 +78,9 @@ export default function Home() {
           user.user_metadata?.avatar_url ||
           user.user_metadata?.picture ||
           null;
+        if (isMounted) {
+          setGoogleAvatarUrl(userAvatar);
+        }
 
         // 1. Fetch or create profile in Supabase
         const { data: remoteProfile } = await supabase
@@ -93,7 +97,7 @@ export default function Home() {
             full_name: (remoteProfile.full_name && remoteProfile.full_name !== 'Pengguna Baru' && remoteProfile.full_name !== 'Usep')
               ? remoteProfile.full_name
               : userFullName,
-            avatar_url: remoteProfile.avatar_url || userAvatar,
+            avatar_url: remoteProfile.avatar_url || userAvatar || '/pics/boy.png',
           };
 
           if (finalProfile.full_name !== remoteProfile.full_name || finalProfile.avatar_url !== remoteProfile.avatar_url) {
@@ -111,7 +115,7 @@ export default function Home() {
             id: user.id,
             email: userEmail,
             full_name: userFullName,
-            avatar_url: userAvatar,
+            avatar_url: userAvatar || '/pics/boy.png',
             monthly_salary: 0,
             payday_date: 25,
             subscription_status: 'TRIAL',
@@ -649,26 +653,27 @@ export default function Home() {
     fullName: string;
     monthlySalary: number;
     paydayDate: number;
+    avatarUrl?: string | null;
   }) => {
     const existing = await db.profiles.toCollection().first();
     const profileId = existing?.id || profile?.id;
     if (profileId) {
-      await db.profiles.update(profileId, {
+      const updateData: Partial<Profile> = {
         full_name: data.fullName,
         monthly_salary: data.monthlySalary,
         payday_date: data.paydayDate,
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (data.avatarUrl !== undefined) {
+        updateData.avatar_url = data.avatarUrl;
+      }
+
+      await db.profiles.update(profileId, updateData);
 
       if (supabase && profileId !== 'user-usep-default') {
         await supabase
           .from('profiles')
-          .update({
-            full_name: data.fullName,
-            monthly_salary: data.monthlySalary,
-            payday_date: data.paydayDate,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', profileId);
       }
     }
@@ -851,6 +856,7 @@ export default function Home() {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
           profile={profile || null}
+          googleAvatarUrl={googleAvatarUrl}
           onSaveProfile={handleSaveProfile}
           onOpenPaywall={() => setIsPaywallOpen(true)}
           onLogout={handleLogout}

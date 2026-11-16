@@ -37,18 +37,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         onClick={onAvatarClick}
       >
         <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-[#7e7ef1]/20 to-[#a0dafd]/30 border border-[#7e7ef1]/30 shadow-sm flex items-center justify-center text-lg select-none group-hover:border-[#7e7ef1] transition">
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt={userName}
-              width={44}
-              height={44}
-              unoptimized
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span>🧑‍💼</span>
-          )}
+          <Image
+            src={avatarUrl || '/pics/boy.png'}
+            alt={userName}
+            width={44}
+            height={44}
+            unoptimized
+            className="w-full h-full object-cover"
+          />
         </div>
         <div>
           <p className="text-xs font-medium text-slate-500">{displayDate}</p>

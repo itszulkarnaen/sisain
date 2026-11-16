@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Calendar, CreditCard, Sparkles, Save, CalendarCheck, HourglassCog, BriefcaseBusiness, CalendarCog } from 'lucide-react';
+import Image from 'next/image';
+import {
+  X,
+  User,
+  Calendar,
+  CreditCard,
+  Sparkles,
+  Save,
+  CalendarCheck,
+  HourglassCog,
+  BriefcaseBusiness,
+  CalendarCog,
+  Camera,
+} from 'lucide-react';
 import { Profile } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
 import { getPaydayCycle } from '@/lib/utils/payday';
@@ -11,14 +24,28 @@ import { clsx } from 'clsx';
 
 type PaydayOption = 'LAST_DAY' | 'DAY_25' | 'CUSTOM';
 
+const PRESET_AVATARS = [
+  { id: 'boy', label: 'Cowok', path: '/pics/boy.png' },
+  { id: 'girl', label: 'Cewek', path: '/pics/girl.png' },
+  { id: 'woman', label: 'Wanita', path: '/pics/woman.png' },
+  { id: 'hijab-girl', label: 'Hijab', path: '/pics/hijab-girl.png' },
+  { id: 'young-boy', label: 'Remaja', path: '/pics/young-boy.png' },
+  { id: 'student', label: 'Pelajar', path: '/pics/student.png' },
+  { id: 'business-woman', label: 'Karier', path: '/pics/business-woman.png' },
+  { id: 'nerd', label: 'Kacamata', path: '/pics/nerd.png' },
+  { id: 'bald', label: 'Botak', path: '/pics/bald.png' },
+];
+
 interface ProfileSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   profile: Profile | null;
+  googleAvatarUrl?: string | null;
   onSaveProfile: (data: {
     fullName: string;
     monthlySalary: number;
     paydayDate: number;
+    avatarUrl?: string | null;
   }) => Promise<void>;
   onOpenPaywall: () => void;
   onLogout?: () => void;
@@ -28,11 +55,15 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   isOpen,
   onClose,
   profile,
+  googleAvatarUrl,
   onSaveProfile,
   onOpenPaywall,
   onLogout,
 }) => {
   const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    profile?.avatar_url || googleAvatarUrl || '/pics/boy.png'
+  );
   const [salaryStr, setSalaryStr] = useState(
     profile?.monthly_salary && profile.monthly_salary > 0
       ? formatRupiahInput(profile.monthly_salary)
@@ -46,6 +77,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setFullName(profile?.full_name || '');
+      setAvatarUrl(profile?.avatar_url || googleAvatarUrl || '/pics/boy.png');
       setSalaryStr(
         profile?.monthly_salary && profile.monthly_salary > 0
           ? formatRupiahInput(profile.monthly_salary)
@@ -62,7 +94,15 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         setPaydayOption('CUSTOM');
       }
     }
-  }, [isOpen, profile?.id, profile?.full_name, profile?.monthly_salary, profile?.payday_date]);
+  }, [
+    isOpen,
+    profile?.id,
+    profile?.full_name,
+    profile?.avatar_url,
+    googleAvatarUrl,
+    profile?.monthly_salary,
+    profile?.payday_date,
+  ]);
 
   if (!isOpen) return null;
 
@@ -93,6 +133,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         fullName: fullName.trim() || 'Pengguna',
         monthlySalary: salary,
         paydayDate: paydayOption === 'LAST_DAY' ? 31 : paydayDate,
+        avatarUrl,
       });
       onClose();
     } finally {
@@ -111,7 +152,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
       <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl z-10 px-5 pt-3 pb-6 flex flex-col max-h-[92vh] overflow-y-auto">
         <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3" />
 
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-bold text-slate-900">Pengaturan Akun & Gaji</h2>
           <button
             onClick={onClose}
@@ -122,7 +163,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         </div>
 
         {/* Subscription Status Card */}
-        <div className="p-3.5 rounded-2xl bg-[#7e7ef1]/10 border border-[#a0dafd]/40 mb-4 flex items-center justify-between">
+        <div className="p-3 rounded-2xl bg-[#7e7ef1]/10 border border-[#a0dafd]/40 mb-3 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold tracking-wider text-[#7e7ef1] uppercase">
               Status Keanggotaan
@@ -150,7 +191,107 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 
         {/* Form Settings */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nama Panggilan (Bisa diedit bebas) */}
+          {/* Avatar Picker Section */}
+          <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-[#7e7ef1]" />
+                <span>Foto Profil & Avatar</span>
+              </label>
+              <span className="text-[10px] text-slate-400 font-medium">Klik untuk memilih</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Preview Avatar Terpilih */}
+              <div className="relative shrink-0">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border-2 border-[#7e7ef1] shadow-sm flex items-center justify-center p-0.5">
+                  <Image
+                    src={avatarUrl || '/pics/boy.png'}
+                    alt="Preview Avatar"
+                    width={56}
+                    height={56}
+                    unoptimized
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                {googleAvatarUrl && avatarUrl === googleAvatarUrl && (
+                  <span
+                    className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-white border border-slate-200 shadow-xs text-[8px] font-extrabold text-blue-600 flex items-center justify-center"
+                    title="Foto Akun Google Kamu"
+                  >
+                    Google
+                  </span>
+                )}
+              </div>
+
+              {/* List Pilihan Avatar */}
+              <div className="flex-1 overflow-hidden">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 px-0.5 no-scrollbar">
+                  {/* Opsi Foto Akun Google (Hanya jika user login via Google) */}
+                  {googleAvatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl(googleAvatarUrl)}
+                      className={clsx(
+                        'relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition active:scale-90 flex items-center justify-center group',
+                        avatarUrl === googleAvatarUrl
+                          ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
+                      )}
+                      title="Gunakan Foto Akun Google Kamu"
+                    >
+                      <Image
+                        src={googleAvatarUrl}
+                        alt="Foto Google"
+                        width={40}
+                        height={40}
+                        unoptimized
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute bottom-0 inset-x-0 bg-blue-600/90 text-white text-[7px] font-bold text-center leading-tight py-0.2">
+                        Google
+                      </span>
+                    </button>
+                  )}
+
+                  {/* 9 Preset Pics Avatars */}
+                  {PRESET_AVATARS.map((item) => {
+                    const isSelected = avatarUrl === item.path;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setAvatarUrl(item.path)}
+                        className={clsx(
+                          'relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition active:scale-90 flex items-center justify-center p-0.5 bg-white',
+                          isSelected
+                            ? 'border-[#7e7ef1] ring-2 ring-[#a0dafd] scale-105 shadow-xs bg-[#7e7ef1]/10'
+                            : 'border-slate-200 hover:border-slate-300 opacity-75 hover:opacity-100'
+                        )}
+                        title={item.label}
+                      >
+                        <Image
+                          src={item.path}
+                          alt={item.label}
+                          width={36}
+                          height={36}
+                          unoptimized
+                          className="w-full h-full object-contain"
+                        />
+                        {isSelected && (
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#7e7ef1] text-white rounded-full flex items-center justify-center text-[7px] font-extrabold shadow-xs">
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nama Panggilan */}
           <div>
             <label className="text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
@@ -178,28 +319,26 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 </button>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Nama ini yang muncul di sapaan dashboard (&quot;Halo, {fullName.trim() || 'Pengguna'}&quot;).
-            </p>
           </div>
 
           {/* Nominal Gaji Bulanan */}
           <div>
             <label className="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5 text-[#7e7ef1]" />
-              <span>Gaji Pokok Bulanan</span>
+              <span>Gaji Bulanan</span>
             </label>
             <input
               type="text"
               inputMode="numeric"
               value={salaryStr}
               onChange={(e) => setSalaryStr(formatRupiahInput(e.target.value))}
-              placeholder="Contoh: Rp 8.000.000"
-              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 outline-hidden font-bold text-slate-900"
+              placeholder="Contoh: 8.000.000"
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 outline-hidden font-bold text-slate-900 transition bg-white"
               required
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              Dipakai untuk menghitung batas belanja harian (*Safe-to-Spend*): {formatRupiah(parseRupiahInput(salaryStr))}
+              Dipakai untuk menghitung batas belanja harian (*Safe-to-Spend*):{' '}
+              {formatRupiah(parseRupiahInput(salaryStr))}
             </p>
           </div>
 
@@ -230,9 +369,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   )}
                 </div>
                 <span className="text-xs font-bold text-slate-900 leading-tight">Akhir Bulan</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                  Tgl 28-31
-                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">Tgl 28-31</span>
               </button>
 
               {/* Opsi 2: Tanggal 25 */}
@@ -253,9 +390,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   )}
                 </div>
                 <span className="text-xs font-bold text-slate-900 leading-tight">Tanggal 25</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                  Payroll ID
-                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">Payroll ID</span>
               </button>
 
               {/* Opsi 3: Pilih Tanggal */}
@@ -278,9 +413,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 <span className="text-xs font-bold text-slate-900 leading-tight">
                   {paydayOption === 'CUSTOM' ? `Tgl ${paydayDate}` : 'Pilih Tgl'}
                 </span>
-                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-                  Tgl 1 - 30
-                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">Tgl 1 - 30</span>
               </button>
             </div>
 
@@ -288,57 +421,47 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             {paydayOption === 'CUSTOM' && (
               <div className="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-1">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-slate-700">Pilih Tanggal Penggajian (1 - 30):</span>
-                  <span className="text-[11px] font-extrabold text-[#7e7ef1] bg-white px-2 py-0.5 rounded-md border border-[#a0dafd]/40">
-                    Tgl {paydayDate}
+                  <span className="text-xs font-bold text-slate-700">Pilih Tanggal Gajian:</span>
+                  <span className="text-xs font-extrabold text-[#7e7ef1] bg-[#7e7ef1]/10 px-2 py-0.5 rounded-full">
+                    Tanggal {paydayDate}
                   </span>
                 </div>
-                <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 text-center">
-                  {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => {
-                    const isSelected = paydayDate === d;
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => handleSelectCustom(d)}
-                        className={clsx(
-                          'h-7 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center',
-                          isSelected
-                            ? 'bg-[#7e7ef1] text-white shadow-xs ring-2 ring-[#a0dafd]/60 scale-105'
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/60'
-                        )}
-                      >
-                        {d}
-                      </button>
-                    );
-                  })}
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setPaydayDate(day)}
+                      className={clsx(
+                        'h-8 rounded-xl text-xs font-bold transition-all active:scale-90',
+                        paydayDate === day
+                          ? 'bg-[#7e7ef1] text-white shadow-xs ring-2 ring-[#a0dafd]'
+                          : 'bg-white hover:bg-[#a0dafd]/20 text-slate-700 border border-slate-200/60'
+                      )}
+                    >
+                      {day}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Real-time Payday Cycle Preview */}
-            <div className="mt-2.5 p-3 rounded-2xl bg-[#7e7ef1]/8 border border-[#a0dafd]/40 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 overflow-hidden">
+            {/* Informasi Siklus Aktif */}
+            <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <CalendarCheck className="w-4 h-4 text-[#7e7ef1] shrink-0" />
-                <div className="truncate">
-                  <p className="text-[10px] text-slate-500 font-medium">Siklus Gajian Berikutnya:</p>
-                  <p className="font-extrabold text-slate-900 truncate">
-                    {paydayOption === 'LAST_DAY' ? 'Akhir Bulan' : `Tanggal ${paydayDate}`} ({formattedNextDate})
-                  </p>
-                </div>
+                <span className="text-[11px] font-semibold text-slate-600">Gajian Berikutnya:</span>
               </div>
-              <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white text-[#7e7ef1] border border-[#a0dafd]/40 shadow-xs shrink-0 ml-2">
-                {cycleInfo.daysRemaining} hari lagi
-              </span>
+              <span className="text-xs font-extrabold text-[#7e7ef1]">{formattedNextDate}</span>
             </div>
           </div>
 
-          {/* Submit */}
-          <div className="pt-2 space-y-2">
+          {/* Action Buttons */}
+          <div className="pt-2 flex items-center gap-2">
             <button
               type="submit"
               disabled={isSaving}
-              className="w-full py-3.5 rounded-2xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#7e7ef1]/25 ring-1 ring-[#a0dafd]/30 active:scale-98 transition"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-xs active:scale-98 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
@@ -348,9 +471,9 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="w-full py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold transition text-center"
+                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-bold transition active:scale-98"
               >
-                Keluar dari Akun (Logout)
+                Keluar
               </button>
             )}
           </div>

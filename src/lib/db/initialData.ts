@@ -131,7 +131,7 @@ export async function initializeAppData() {
       id: 'user-usep-default',
       email: 'usep@kantor.com',
       full_name: 'Usep',
-      avatar_url: null,
+      avatar_url: '/pics/boy.png',
       monthly_salary: 8000000, // Rp 8.000.000
       payday_date: 25, // Tanggal 25
       subscription_status: 'TRIAL',
