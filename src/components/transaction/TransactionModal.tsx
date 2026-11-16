@@ -6,9 +6,10 @@ import { Numpad } from './Numpad';
 import { Category, Transaction, TransactionType } from '@/types';
 import { formatNumberOnly } from '@/lib/utils/currency';
 import { clsx } from 'clsx';
-import { format } from 'date-fns';
+import { format, isToday, isSameDay, subDays, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
+import { CuteDatePickerModal } from '@/components/common/CuteDatePickerModal';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [notes, setNotes] = useState('');
   const [transactionDate, setTransactionDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -123,7 +125,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   const filteredCategories = categories.filter((c) => c.type === type);
-  const displayDateText = format(new Date(transactionDate), 'd MMM', { locale: id });
+
+  let displayDateText = '';
+  try {
+    const parsed = parseISO(transactionDate);
+    if (isToday(parsed)) {
+      displayDateText = 'Hari Ini';
+    } else if (isSameDay(parsed, subDays(new Date(), 1))) {
+      displayDateText = 'Kemarin';
+    } else {
+      displayDateText = format(parsed, 'd MMM', { locale: id });
+    }
+  } catch {
+    displayDateText = transactionDate;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in">
@@ -169,7 +184,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         </div>
 
         {/* Big Amount Display */}
-        <div className="flex items-center justify-center py-2">
+        <div className="flex items-center justify-center py-2.5 px-4 rounded-2xl bg-[#a0dafd]/15 border border-[#a0dafd]/30 my-1">
           <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Rp{formatNumberOnly(numericAmount)}
           </span>
@@ -229,18 +244,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           {/* Date Picker Pill */}
-          <div className="relative">
-            <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium cursor-pointer hover:bg-slate-100 transition shrink-0">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>{displayDateText}</span>
-              <input
-                type="date"
-                value={transactionDate}
-                onChange={(e) => setTransactionDate(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full"
-              />
-            </label>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsDatePickerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#a0dafd]/15 hover:bg-[#a0dafd]/25 border border-[#a0dafd]/50 text-xs text-slate-800 font-semibold cursor-pointer active:scale-95 transition shrink-0 shadow-2xs"
+            title="Pilih tanggal transaksi"
+          >
+            <Calendar className="w-3.5 h-3.5 text-[#7e7ef1]" />
+            <span>{displayDateText}</span>
+          </button>
         </div>
 
         {/* Category Grid */}
@@ -309,6 +321,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <Check className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Cute Date Picker Modal */}
+        <CuteDatePickerModal
+          isOpen={isDatePickerOpen}
+          selectedDate={transactionDate}
+          onSelectDate={(newDate) => setTransactionDate(newDate)}
+          onClose={() => setIsDatePickerOpen(false)}
+        />
       </div>
     </div>
   );

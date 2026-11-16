@@ -29,7 +29,7 @@ export const Numpad: React.FC<NumpadProps> = ({
               key={idx}
               type="button"
               onClick={onBackspace}
-              className="h-12 rounded-xl bg-orange-50/70 hover:bg-orange-100 text-slate-700 font-bold flex items-center justify-center active:scale-95 transition shadow-xs"
+              className="h-12 rounded-2xl bg-[#a0dafd]/20 hover:bg-[#a0dafd]/35 border border-[#a0dafd]/40 text-slate-700 font-bold flex items-center justify-center active:scale-95 active:bg-[#a0dafd]/50 transition shadow-2xs"
             >
               <Delete className="w-5 h-5 text-slate-700" />
             </button>
@@ -41,7 +41,7 @@ export const Numpad: React.FC<NumpadProps> = ({
             key={idx}
             type="button"
             onClick={() => onDigitPress(key)}
-            className="h-12 rounded-xl bg-orange-50/70 hover:bg-orange-100/90 text-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition shadow-xs"
+            className="h-12 rounded-2xl bg-[#a0dafd]/20 hover:bg-[#a0dafd]/35 border border-[#a0dafd]/40 text-slate-800 text-lg font-extrabold flex items-center justify-center active:scale-95 active:bg-[#a0dafd]/50 transition shadow-2xs"
           >
             {key}
           </button>
