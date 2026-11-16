@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { Lock, Mail, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function LoginPage() {
@@ -209,14 +209,17 @@ export default function LoginPage() {
             {isRegister && (
               <div>
                 <label className="text-[11px] font-bold text-slate-600 block mb-1">Nama Panggilan</label>
-                <input
-                  type="text"
-                  placeholder="Usep"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-hidden text-xs font-medium"
-                  required
-                />
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 focus-within:border-indigo-500 bg-white">
+                  <User className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Usep"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-transparent outline-hidden text-xs font-medium text-slate-900 placeholder:text-slate-400"
+                    required
+                  />
+                </div>
               </div>
             )}
 
