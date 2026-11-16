@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/dexie';
 import { initializeAppData, deduplicateAndSyncCategories } from '@/lib/db/initialData';
-import { syncPendingTransactions, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
-import { DEFAULT_CATEGORIES } from '@/lib/constants/defaults';
+import { syncPendingTransactions, syncBudgetsToCloud, hydrateFromCloud, SyncStatus } from '@/lib/db/sync';
+import { DEFAULT_CATEGORIES, LEGACY_CATEGORY_ID_MAP } from '@/lib/constants/defaults';
 import { supabase } from '@/lib/supabase/client';
 import { calculateSafeToSpend } from '@/lib/utils/payday';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -148,7 +148,10 @@ export default function Home() {
         // 5. Hydrate real user data from Supabase Cloud
         await hydrateFromCloud(user.id);
 
-        // 6. Sync any pending transactions to cloud
+        // 6. Sync any local budgets to Supabase Cloud
+        await syncBudgetsToCloud(user.id);
+
+        // 7. Sync any pending transactions to cloud
         await syncPendingTransactions();
 
       } catch (err) {
@@ -318,10 +321,11 @@ export default function Home() {
     const userId = existing?.id || profile?.id || 'guest-user';
     const isEditing = Boolean(data.id);
     const txId = data.id || crypto.randomUUID();
+    const validCategoryId = LEGACY_CATEGORY_ID_MAP[data.categoryId] || data.categoryId;
 
     if (isEditing) {
       await db.transactions.update(txId, {
-        category_id: data.categoryId,
+        category_id: validCategoryId,
         amount: data.amount,
         type: data.type,
         transaction_date: data.transactionDate,
@@ -333,7 +337,7 @@ export default function Home() {
         await supabase
           .from('transactions')
           .update({
-            category_id: data.categoryId,
+            category_id: validCategoryId,
             amount: data.amount,
             type: data.type,
             transaction_date: data.transactionDate,
@@ -346,7 +350,7 @@ export default function Home() {
         id: txId,
         user_id: userId,
         wallet_id: 'wallet-default',
-        category_id: data.categoryId,
+        category_id: validCategoryId,
         amount: data.amount,
         type: data.type,
         transaction_date: data.transactionDate,
@@ -384,28 +388,29 @@ export default function Home() {
   };
 
   const handleSaveBudget = async (categoryId: string, monthlyLimit: number) => {
-    const existing = await db.budgets.where('category_id').equals(categoryId).first();
+    const validCatId = LEGACY_CATEGORY_ID_MAP[categoryId] || categoryId;
+    const existing = await db.budgets.where('category_id').equals(validCatId).first();
     const budgetId = existing ? existing.id : crypto.randomUUID();
     const userId = profile?.id || 'user-usep-default';
 
     if (existing) {
-      await db.budgets.update(existing.id, { monthly_limit: monthlyLimit });
+      await db.budgets.update(existing.id, { monthly_limit: monthlyLimit, category_id: validCatId });
     } else {
       await db.budgets.put({
         id: budgetId,
         user_id: userId,
-        category_id: categoryId,
+        category_id: validCatId,
         monthly_limit: monthlyLimit,
         created_at: new Date().toISOString(),
       });
     }
 
-    if (supabase && userId !== 'user-usep-default') {
+    if (supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
       await supabase.from('budgets').upsert(
         {
           id: budgetId,
           user_id: userId,
-          category_id: categoryId,
+          category_id: validCatId,
           monthly_limit: monthlyLimit,
           updated_at: new Date().toISOString(),
         },

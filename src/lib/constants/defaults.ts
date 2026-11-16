@@ -1,5 +1,19 @@
 import { Category } from '@/types';
 
+export const LEGACY_CATEGORY_ID_MAP: Record<string, string> = {
+  'cat-makan-minum': 'c0000001-0000-0000-0000-000000000001',
+  'cat-nongkrong-kopi': 'c0000001-0000-0000-0000-000000000002',
+  'cat-transport': 'c0000001-0000-0000-0000-000000000003',
+  'cat-belanja': 'c0000001-0000-0000-0000-000000000004',
+  'cat-kosan-tagihan': 'c0000001-0000-0000-0000-000000000005',
+  'cat-hiburan': 'c0000001-0000-0000-0000-000000000006',
+  'cat-gaji': 'c0000001-0000-0000-0000-000000000007',
+  'cat-freelance': 'c0000001-0000-0000-0000-000000000008',
+  'cat-side-hustle': 'c0000001-0000-0000-0000-000000000008',
+  'cat-tidak-terduga': 'c0000001-0000-0000-0000-000000000009',
+  'cat-tak-terduga': 'c0000001-0000-0000-0000-000000000009',
+};
+
 export const DEFAULT_CATEGORIES: Category[] = [
   {
     id: 'c0000001-0000-0000-0000-000000000001',

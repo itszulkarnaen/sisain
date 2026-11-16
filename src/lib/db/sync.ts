@@ -1,6 +1,7 @@
 import { db } from './dexie';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
-import { Transaction } from '@/types';
+import { Transaction, Budget } from '@/types';
+import { LEGACY_CATEGORY_ID_MAP } from '../constants/defaults';
 
 export type SyncStatus = 'SYNCED' | 'PENDING' | 'OFFLINE' | 'ERROR';
 
@@ -59,7 +60,7 @@ export async function syncPendingTransactions(): Promise<{ success: boolean; cou
       wallet_id: (tx.wallet_id && tx.wallet_id.length === 36 && tx.wallet_id !== 'wallet-default')
         ? tx.wallet_id
         : defaultWalletId,
-      category_id: tx.category_id,
+      category_id: LEGACY_CATEGORY_ID_MAP[tx.category_id] || tx.category_id,
       amount: tx.amount,
       type: tx.type,
       transaction_date: tx.transaction_date ? tx.transaction_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
@@ -99,6 +100,59 @@ export async function syncPendingTransactions(): Promise<{ success: boolean; cou
 }
 
 /**
+ * Upload semua alokasi budget lokal yang valid ke Supabase Cloud
+ */
+export async function syncBudgetsToCloud(userId: string): Promise<{ success: boolean; count: number; error?: string }> {
+  if (!navigator.onLine || !isSupabaseConfigured || !supabase) {
+    return { success: false, count: 0, error: 'Offline / Supabase not configured' };
+  }
+  if (!userId || userId === 'user-usep-default' || userId === 'guest-user') {
+    return { success: false, count: 0, error: 'Unauthenticated' };
+  }
+
+  try {
+    const localBudgets = await db.budgets.toArray();
+    if (localBudgets.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const payload = localBudgets
+      .filter((b) => b.monthly_limit > 0)
+      .map((b) => {
+        const catId = LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id;
+        const bId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.id)
+          ? b.id
+          : crypto.randomUUID();
+
+        return {
+          id: bId,
+          user_id: userId,
+          category_id: catId,
+          monthly_limit: b.monthly_limit,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+    if (payload.length > 0) {
+      const { error } = await supabase
+        .from('budgets')
+        .upsert(payload, { onConflict: 'user_id, category_id' });
+
+      if (error) {
+        console.error('Error syncing budgets to Supabase:', error);
+        return { success: false, count: 0, error: error.message };
+      }
+    }
+
+    return { success: true, count: payload.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('Failed to sync budgets:', errorMsg);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+/**
  * Hydrate data dari Supabase ke Dexie saat user baru login / ganti device
  */
 export async function hydrateFromCloud(userId: string) {
@@ -128,7 +182,11 @@ export async function hydrateFromCloud(userId: string) {
       .eq('user_id', userId);
 
     if (!budgetError && cloudBudgets && cloudBudgets.length > 0) {
-      await db.budgets.bulkPut(cloudBudgets);
+      const cleanBudgets: Budget[] = cloudBudgets.map((b) => ({
+        ...b,
+        category_id: LEGACY_CATEGORY_ID_MAP[b.category_id] || b.category_id,
+      }));
+      await db.budgets.bulkPut(cleanBudgets);
     }
 
     // 3. Recurring Rules

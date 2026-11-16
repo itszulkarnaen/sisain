@@ -1,6 +1,6 @@
 import { db } from './dexie';
 import { Category, Profile, RecurringRule } from '@/types';
-import { DEFAULT_CATEGORIES } from '../constants/defaults';
+import { DEFAULT_CATEGORIES, LEGACY_CATEGORY_ID_MAP } from '../constants/defaults';
 import { format, subDays } from 'date-fns';
 
 /**
@@ -8,6 +8,37 @@ import { format, subDays } from 'date-fns';
  * semua kategori default (seperti 'Tidak Terduga') ada berdasarkan NAMA (bukan ID semata).
  */
 export async function deduplicateAndSyncCategories() {
+  // 0. Auto-migrate legacy non-UUID category IDs (cat-belanja, cat-makan-minum, dll)
+  for (const [oldId, newUuid] of Object.entries(LEGACY_CATEGORY_ID_MAP)) {
+    const oldCat = await db.categories.get(oldId);
+    if (oldCat) {
+      await db.transactions.where('category_id').equals(oldId).modify({ category_id: newUuid });
+      await db.budgets.where('category_id').equals(oldId).modify({ category_id: newUuid });
+      await db.recurringRules.where('category_id').equals(oldId).modify({ category_id: newUuid });
+      await db.categories.delete(oldId);
+    }
+  }
+
+  // Pastikan SEMUA transaksi / budget / rule lokal tidak ada yang tertinggal ID legacy cat-*
+  const allTxs = await db.transactions.toArray();
+  for (const tx of allTxs) {
+    if (LEGACY_CATEGORY_ID_MAP[tx.category_id]) {
+      await db.transactions.update(tx.id, { category_id: LEGACY_CATEGORY_ID_MAP[tx.category_id] });
+    }
+  }
+  const allBgs = await db.budgets.toArray();
+  for (const b of allBgs) {
+    if (LEGACY_CATEGORY_ID_MAP[b.category_id]) {
+      await db.budgets.update(b.id, { category_id: LEGACY_CATEGORY_ID_MAP[b.category_id] });
+    }
+  }
+  const allRls = await db.recurringRules.toArray();
+  for (const r of allRls) {
+    if (LEGACY_CATEGORY_ID_MAP[r.category_id]) {
+      await db.recurringRules.update(r.id, { category_id: LEGACY_CATEGORY_ID_MAP[r.category_id] });
+    }
+  }
+
   const allCategories = await db.categories.toArray();
   const allTransactions = await db.transactions.toArray();
   const allBudgets = await db.budgets.toArray();
@@ -26,18 +57,10 @@ export async function deduplicateAndSyncCategories() {
 
   for (const [, group] of map.entries()) {
     if (group.length > 1) {
-      // Cari yang sudah dipakai oleh transaksi/budget
-      let keeper = group[0];
-      for (const item of group) {
-        const isUsed =
-          allTransactions.some((t) => t.category_id === item.id) ||
-          allBudgets.some((b) => b.category_id === item.id) ||
-          allRules.some((r) => r.category_id === item.id);
-        if (isUsed) {
-          keeper = item;
-          break;
-        }
-      }
+      // Selalu prioritaskan ID resmi DEFAULT_CATEGORIES atau UUID valid sebagai keeper
+      const defaultCatKeeper = group.find((item) => DEFAULT_CATEGORIES.some((dc) => dc.id === item.id));
+      const uuidKeeper = group.find((item) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id));
+      let keeper = defaultCatKeeper || uuidKeeper || group[0];
 
       // Remap transaksi/budget/rule yang pakai ID duplikat ke keeper.id
       for (const item of group) {
