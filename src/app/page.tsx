@@ -890,6 +890,7 @@ export default function Home() {
               : 'Ya, Sudah Bayar'
           }
           cancelText="Batal"
+          loadingText="Memproses..."
           variant={
             categories.find((c) => c.id === ruleToMarkPaid?.category_id)?.type === 'INCOME'
               ? 'primary'

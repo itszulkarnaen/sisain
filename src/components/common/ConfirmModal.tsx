@@ -10,6 +10,7 @@ interface ConfirmModalProps {
   message?: string | React.ReactNode;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
   variant?: 'danger' | 'warning' | 'primary';
   isLoading?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -22,12 +23,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message = 'Transaksi ini akan dihapus secara permanen dari catatan keuangan kamu.',
   confirmText = 'Ya, Hapus',
   cancelText = 'Batal',
+  loadingText,
   variant = 'danger',
   isLoading = false,
   onConfirm,
   onClose,
 }) => {
   if (!isOpen) return null;
+
+  const resolvedLoadingText = loadingText || (variant === 'danger' ? 'Menghapus...' : 'Memproses...');
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-in fade-in duration-150">
@@ -87,7 +91,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             {isLoading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Menghapus...</span>
+                <span>{resolvedLoadingText}</span>
               </>
             ) : (
               <span>{confirmText}</span>
