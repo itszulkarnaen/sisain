@@ -14,7 +14,6 @@ export async function deduplicateAndSyncCategories() {
     if (oldCat) {
       await db.transactions.where('category_id').equals(oldId).modify({ category_id: newUuid });
       await db.budgets.where('category_id').equals(oldId).modify({ category_id: newUuid });
-      await db.recurringRules.where('category_id').equals(oldId).modify({ category_id: newUuid });
       await db.categories.delete(oldId);
     }
   }
