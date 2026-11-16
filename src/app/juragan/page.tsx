@@ -33,6 +33,7 @@ interface SubscribersResponse {
     trial: number;
     expired: number;
   };
+  isServiceRoleConfigured?: boolean;
   error?: string;
 }
 
@@ -44,6 +45,7 @@ export default function JuraganPage() {
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [stats, setStats] = useState({ total: 0, sultan: 0, trial: 0, expired: 0 });
+  const [isServiceRoleConfigured, setIsServiceRoleConfigured] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState('');
 
@@ -73,6 +75,7 @@ export default function JuraganPage() {
       }
       setProfiles(data.profiles || []);
       setStats(data.stats || { total: 0, sultan: 0, trial: 0, expired: 0 });
+      setIsServiceRoleConfigured(data.isServiceRoleConfigured !== false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setDataError(msg);
@@ -313,6 +316,19 @@ export default function JuraganPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 space-y-6">
+        {/* Service Role Missing Warning */}
+        {!isServiceRoleConfigured && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1.5 shadow-xs">
+            <div className="flex items-center gap-2 font-black text-amber-200">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>SUPABASE_SERVICE_ROLE_KEY Belum Terpasang di .env.local</span>
+            </div>
+            <p className="text-[11px] text-amber-300/90 leading-relaxed pl-6">
+              Karena Supabase menerapkan RLS (Row Level Security) pada tabel <code className="bg-slate-800 px-1.5 py-0.5 rounded font-mono text-white">profiles</code>, panggilan anonim dibatasi menjadi 0 baris. Salin <strong className="text-white">service_role secret key</strong> dari Supabase Dashboard &gt; Project Settings &gt; API, lalu tambahkan <code className="bg-slate-800 px-1.5 py-0.5 rounded font-mono text-white">SUPABASE_SERVICE_ROLE_KEY=eyJh...</code> ke file <code className="bg-slate-800 px-1.5 py-0.5 rounded font-mono text-white">.env.local</code> agar data subscriber bisa ditarik tanpa terhalang RLS.
+            </p>
+          </div>
+        )}
+
         {/* Error Notification */}
         {dataError && (
           <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center justify-between">

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       success: true,
       profiles: list,
       stats,
+      isServiceRoleConfigured: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
