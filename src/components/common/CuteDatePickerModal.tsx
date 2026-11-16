@@ -22,6 +22,8 @@ import { clsx } from 'clsx';
 interface CuteDatePickerModalProps {
   isOpen: boolean;
   selectedDate: string; // YYYY-MM-DD
+  title?: string;
+  subtitle?: string;
   onSelectDate: (dateStr: string) => void;
   onClose: () => void;
 }
@@ -29,6 +31,8 @@ interface CuteDatePickerModalProps {
 export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
   isOpen,
   selectedDate,
+  title = 'Pilih Tanggal',
+  subtitle = 'Klik tanggal transaksi',
   onSelectDate,
   onClose,
 }) => {
@@ -88,8 +92,8 @@ export const CuteDatePickerModal: React.FC<CuteDatePickerModalProps> = ({
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-xs font-extrabold text-slate-900 leading-tight">Pilih Tanggal</h3>
-              <p className="text-[10px] text-slate-400 font-medium">Klik tanggal transaksi</p>
+              <h3 className="text-xs font-extrabold text-slate-900 leading-tight">{title}</h3>
+              <p className="text-[10px] text-slate-400 font-medium">{subtitle}</p>
             </div>
           </div>
           <button
