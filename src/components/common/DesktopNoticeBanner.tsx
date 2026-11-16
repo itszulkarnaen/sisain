@@ -19,7 +19,7 @@ export const DesktopNoticeBanner: React.FC = () => {
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-black text-slate-900">Lebih Enak Dibuka di HP! 📱</span>
+            <span className="text-xs font-black text-slate-900">Lebih Enak Dibuka di HP!</span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#7e7ef1] text-white">
               PWA
             </span>
