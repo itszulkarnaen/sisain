@@ -62,8 +62,13 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
 
   const handleSave = async (catId: string) => {
     const val = parseRupiahInput(editLimitStr);
-    await onSaveBudget(catId, val);
+    // Optimistic UI: langsung tutup form edit agar respon instan tanpa nunggu network
     setEditingCategoryId(null);
+    try {
+      await onSaveBudget(catId, val);
+    } catch (err) {
+      console.error('Error saving budget:', err);
+    }
   };
 
   return (

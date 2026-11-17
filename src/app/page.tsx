@@ -561,6 +561,7 @@ export default function Home() {
       await db.budgets.where('category_id').equals(validCatId).delete();
     }
 
+    // Simpan ke Dexie lokal secara instan (<2ms)
     const now = new Date().toISOString();
     await db.budgets.put({
       id: budgetId,
@@ -571,27 +572,49 @@ export default function Home() {
       updated_at: now,
     });
 
+    // Background sync ke Supabase (Non-blocking, tidak menahan UI)
     if (supabase && userId !== 'user-usep-default' && userId !== 'guest-user') {
-      await supabase.from('budgets').upsert(
-        {
-          id: budgetId,
-          user_id: userId,
-          category_id: validCatId,
-          monthly_limit: monthlyLimit,
-          updated_at: now,
-        },
-        { onConflict: 'user_id, category_id' }
-      );
+      (async () => {
+        try {
+          if (monthlyLimit <= 0) {
+            // Jika limit 0 / dihapus, delete dari Supabase agar tidak melanggar CHECK (monthly_limit > 0)
+            await supabase
+              .from('budgets')
+              .delete()
+              .eq('user_id', userId)
+              .eq('category_id', validCatId);
+          } else {
+            await supabase.from('budgets').upsert(
+              {
+                id: budgetId,
+                user_id: userId,
+                category_id: validCatId,
+                monthly_limit: monthlyLimit,
+                updated_at: now,
+              },
+              { onConflict: 'user_id, category_id' }
+            );
+          }
+        } catch (syncErr) {
+          console.warn('Background sync budget to Supabase deferred/failed:', syncErr);
+        }
+      })();
     }
   };
 
   const handleToggleRecurringRule = async (ruleId: string, currentActive: boolean) => {
     await db.recurringRules.update(ruleId, { is_active: !currentActive });
     if (supabase && profile?.id && profile.id !== 'user-usep-default') {
-      await supabase
-        .from('recurring_rules')
-        .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
-        .eq('id', ruleId);
+      void (async () => {
+        try {
+          await supabase
+            .from('recurring_rules')
+            .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
+            .eq('id', ruleId);
+        } catch (err) {
+          console.warn('Background sync recurring toggle deferred:', err);
+        }
+      })();
     }
   };
 
@@ -621,35 +644,47 @@ export default function Home() {
     await db.recurringRules.put(newRule);
 
     if (supabase && userId !== 'user-usep-default') {
-      const { data: wallets } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1);
+      (async () => {
+        try {
+          const { data: wallets } = await supabase
+            .from('wallets')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1);
 
-      let defaultWalletId = wallets?.[0]?.id;
-      if (!defaultWalletId) {
-        const { data: newWallet } = await supabase
-          .from('wallets')
-          .insert({ user_id: userId, name: 'Dompet Utama', is_default: true })
-          .select('id')
-          .single();
-        defaultWalletId = newWallet?.id;
-      }
+          let defaultWalletId = wallets?.[0]?.id;
+          if (!defaultWalletId) {
+            const { data: newWallet } = await supabase
+              .from('wallets')
+              .insert({ user_id: userId, name: 'Dompet Utama', is_default: true })
+              .select('id')
+              .single();
+            defaultWalletId = newWallet?.id;
+          }
 
-      if (defaultWalletId) {
-        await supabase.from('recurring_rules').insert({
-          ...newRule,
-          wallet_id: defaultWalletId,
-        });
-      }
+          if (defaultWalletId) {
+            await supabase.from('recurring_rules').insert({
+              ...newRule,
+              wallet_id: defaultWalletId,
+            });
+          }
+        } catch (err) {
+          console.warn('Background sync add recurring rule deferred:', err);
+        }
+      })();
     }
   };
 
   const handleDeleteRecurringRule = async (ruleId: string) => {
     await db.recurringRules.delete(ruleId);
     if (supabase && profile?.id && profile.id !== 'user-usep-default') {
-      await supabase.from('recurring_rules').delete().eq('id', ruleId);
+      void (async () => {
+        try {
+          await supabase.from('recurring_rules').delete().eq('id', ruleId);
+        } catch (err) {
+          console.warn('Background sync delete recurring rule deferred:', err);
+        }
+      })();
     }
   };
 
@@ -754,10 +789,16 @@ export default function Home() {
       await db.profiles.update(profileId, updateData);
 
       if (supabase && profileId !== 'user-usep-default') {
-        await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', profileId);
+        void (async () => {
+          try {
+            await supabase
+              .from('profiles')
+              .update(updateData)
+              .eq('id', profileId);
+          } catch (err) {
+            console.warn('Background sync profile to Supabase deferred:', err);
+          }
+        })();
       }
     }
   };
