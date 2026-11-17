@@ -83,7 +83,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
       {/* Total Anggaran Summary Card */}
       <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-[#7e7ef1]/10 via-[#a0dafd]/15 to-[#7e7ef1]/5 rounded-2xl border border-[#a0dafd]/40 shadow-xs">
         <div>
-          <span className="text-[11px] font-semibold text-slate-500 block">Total Pagu Ter-budget</span>
+          <span className="text-[11px] font-semibold text-slate-500 block">Total Uang Ter-budget</span>
           <span className="text-base font-extrabold text-[#5050dc]">{formatRupiah(totalAllocated)}</span>
         </div>
         <div className="text-right">
@@ -167,7 +167,7 @@ export const BudgetView: React.FC<BudgetViewProps> = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-400 italic">Belum ada pagu anggaran untuk kategori ini.</p>
+                <p className="text-[11px] text-slate-400 italic">Belum ada anggaran untuk kategori ini.</p>
               )}
             </div>
           );
