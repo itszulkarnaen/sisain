@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Layers, Calendar, DollarSign } from 'lucide-react';
+import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Layers, Calendar, Banknote } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { SafeToSpendSummary } from '@/types';
 
@@ -117,7 +117,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
         {/* KANAN: Uang di Luar Budget (Tanpa sub-text) */}
         <div className="bg-white/15 backdrop-blur-md rounded-2xl p-2.5 border border-white/20 flex flex-col justify-center">
           <div className="flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
-            <DollarSign className="w-3 h-3 text-[#a0dafd]" />
+            <Banknote className="w-3 h-3 text-[#a0dafd]" />
             <span>Uang di Luar Budget</span>
           </div>
           <p className="text-sm font-extrabold text-white mt-1">
