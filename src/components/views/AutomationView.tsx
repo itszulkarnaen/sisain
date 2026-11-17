@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RecurringRule, Category, Transaction } from '@/types';
 import { formatRupiah, formatRupiahInput, parseRupiahInput } from '@/lib/utils/currency';
-import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, X, Check } from 'lucide-react';
+import { Repeat, Plus, Trash2, Power, ShieldAlert, Calendar, X, Check, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
@@ -16,12 +16,19 @@ interface AutomationViewProps {
   transactions?: Transaction[];
   isProOrTrial: boolean;
   onLockedFeatureClick: () => void;
-  onToggleRule: (ruleId: string, currentActive: boolean) => Promise<void>;
   onAddRule: (data: {
     title: string;
     amount: number;
     categoryId: string;
     executionDay: number;
+  }) => Promise<void>;
+  onUpdateRule: (data: {
+    id: string;
+    title: string;
+    amount: number;
+    categoryId: string;
+    executionDay: number;
+    isActive?: boolean;
   }) => Promise<void>;
   onDeleteRule: (ruleId: string) => Promise<void>;
   onMarkAsPaid?: (rule: RecurringRule) => void;
@@ -33,8 +40,8 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
   transactions = [],
   isProOrTrial,
   onLockedFeatureClick,
-  onToggleRule,
   onAddRule,
+  onUpdateRule,
   onDeleteRule,
   onMarkAsPaid,
 }) => {
@@ -60,6 +67,16 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
   const [ruleToDelete, setRuleToDelete] = useState<RecurringRule | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Edit State
+  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editAmountStr, setEditAmountStr] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editExecutionDay, setEditExecutionDay] = useState(1);
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'add' | 'edit'>('add');
+
   useEffect(() => {
     if (!categoryId && selectableCategories.length > 0) {
       const def =
@@ -79,6 +96,46 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleOpenEdit = (rule: RecurringRule) => {
+    setEditingRule(rule);
+    setEditTitle(rule.title);
+    setEditAmountStr(formatRupiahInput(rule.amount));
+    setEditCategoryId(rule.category_id);
+    setEditExecutionDay(rule.execution_day);
+    setEditIsActive(rule.is_active);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRule) return;
+    const amount = parseRupiahInput(editAmountStr);
+    if (!editTitle.trim() || amount <= 0 || !editCategoryId) return;
+
+    setIsUpdating(true);
+    try {
+      await onUpdateRule({
+        id: editingRule.id,
+        title: editTitle.trim(),
+        amount,
+        categoryId: editCategoryId,
+        executionDay: editExecutionDay,
+        isActive: editIsActive,
+      });
+      setEditingRule(null);
+    } catch (err) {
+      console.error('Error updating recurring rule:', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteFromEdit = () => {
+    if (!editingRule) return;
+    const target = editingRule;
+    setEditingRule(null);
+    setRuleToDelete(target);
   };
 
   if (!isProOrTrial) {
@@ -204,7 +261,10 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                 </label>
                 <button
                   type="button"
-                  onClick={() => setIsCategoryPickerOpen(true)}
+                  onClick={() => {
+                    setPickerTarget('add');
+                    setIsCategoryPickerOpen(true);
+                  }}
                   className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden">
@@ -250,7 +310,10 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                 </label>
                 <button
                   type="button"
-                  onClick={() => setIsDatePickerOpen(true)}
+                  onClick={() => {
+                    setPickerTarget('add');
+                    setIsDatePickerOpen(true);
+                  }}
                   className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
@@ -348,6 +411,11 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                       >
                         {isRuleIncome ? 'Pemasukan' : 'Tagihan'}
                       </span>
+                      {!rule.is_active && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm border shrink-0 text-amber-700 bg-amber-50 border-amber-200">
+                          Dijeda
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       Tiap tgl {rule.execution_day} • {isRuleIncome ? '+' : '-'}{formatRupiah(rule.amount)}
@@ -378,23 +446,12 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
                     </button>
                   )}
                   <button
-                    onClick={() => onToggleRule(rule.id, rule.is_active)}
-                    title={rule.is_active ? 'Jeda Otomasi' : 'Aktifkan'}
-                    className={clsx(
-                      'p-2 rounded-xl text-xs font-bold transition cursor-pointer',
-                      rule.is_active
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                    )}
+                    type="button"
+                    onClick={() => handleOpenEdit(rule)}
+                    title="Pengaturan Tagihan"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 active:scale-95 transition cursor-pointer"
                   >
-                    <Power className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setRuleToDelete(rule)}
-                    title="Hapus"
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                    <Settings className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -402,6 +459,208 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Edit Recurring Rule Modal */}
+      {editingRule && (() => {
+        const isEditingIncome = (categoryMap.get(editCategoryId) || defaultCategory)?.type === 'INCOME';
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in">
+            <div className="fixed inset-0" onClick={() => !isUpdating && setEditingRule(null)} />
+
+            <div className="relative w-full max-w-md bg-white rounded-t-3xl shadow-2xl z-10 px-5 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] flex flex-col max-h-[90dvh] overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-200">
+              {/* Handle */}
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-2 shrink-0" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
+                      {isEditingIncome ? 'Pengaturan Pemasukan Rutin' : 'Pengaturan Tagihan Rutin'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Ubah nominal, tanggal, status, atau hapus aturan ini
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingRule(null)}
+                  disabled={isUpdating}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleSaveEdit} className="space-y-3.5">
+                {/* Nama Tagihan */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                    {isEditingIncome ? 'Nama Pemasukan Rutin' : 'Nama Tagihan'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Nama tagihan / pemasukan"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-bold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
+                    required
+                  />
+                </div>
+
+                {/* Nominal */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                    {isEditingIncome ? 'Nominal Pemasukan Bulanan' : 'Nominal Tagihan Bulanan'}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={editAmountStr}
+                    onChange={(e) => setEditAmountStr(formatRupiahInput(e.target.value))}
+                    placeholder="Rp 0"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-900 font-extrabold placeholder-slate-400 outline-hidden focus:border-[#7e7ef1] focus:ring-2 focus:ring-[#a0dafd]/40 transition"
+                    required
+                  />
+                </div>
+
+                {/* Kategori Pos Anggaran Button */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                    Kategori Pos Anggaran
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerTarget('edit');
+                      setIsCategoryPickerOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0">
+                        <CategoryIcon
+                          icon={(categoryMap.get(editCategoryId) || defaultCategory)?.icon}
+                          name={(categoryMap.get(editCategoryId) || defaultCategory)?.name}
+                          size={28}
+                          className="w-7 h-7 object-contain"
+                        />
+                      </div>
+                      <div className="truncate">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-extrabold text-slate-900 block truncate">
+                            {(categoryMap.get(editCategoryId) || defaultCategory)?.name || 'Pilih Kategori'}
+                          </span>
+                          <span
+                            className={clsx(
+                              'text-[9px] font-bold px-1.5 py-0.2 rounded-sm border',
+                              isEditingIncome
+                                ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+                            )}
+                          >
+                            {isEditingIncome ? 'Pemasukan' : 'Pengeluaran'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          Ketuk untuk mengganti pos
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
+                      Ganti
+                    </span>
+                  </button>
+                </div>
+
+                {/* Tanggal Eksekusi Button */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 mb-1 block">
+                    {isEditingIncome ? 'Tanggal Pemasukan Bulanan' : 'Tanggal Eksekusi Bulanan'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerTarget('edit');
+                      setIsDatePickerOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition active:scale-[0.99] text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#a0dafd]/25 border border-[#a0dafd]/50 flex items-center justify-center text-[#7e7ef1] shrink-0 shadow-2xs">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900 block">
+                          Setiap Tanggal {editExecutionDay}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {isEditingIncome
+                            ? `Otomatis dicatat masuk tiap tgl ${editExecutionDay} pukul 00:05 WIB`
+                            : `Dipotong otomatis tiap tgl ${editExecutionDay} pukul 00:05 WIB`}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-[#7e7ef1] px-2.5 py-1 rounded-lg bg-[#7e7ef1]/10 border border-[#a0dafd]/40 shrink-0 ml-2">
+                      Pilih Tanggal
+                    </span>
+                  </button>
+                </div>
+
+                {/* Status Otomasi Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-slate-50/80">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Status Otomasi</span>
+                    <span className="text-[10px] text-slate-400">
+                      {editIsActive ? 'Otomasi aktif dan dieksekusi bulanan' : 'Otomasi dijeda sementara'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsActive(!editIsActive)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer',
+                      editIsActive
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-200 text-slate-600 border border-slate-300'
+                    )}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>{editIsActive ? 'Aktif' : 'Dijeda'}</span>
+                  </button>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="w-full py-3 rounded-xl font-bold text-xs text-white bg-[#7e7ef1] hover:bg-[#6c6ce8] shadow-md shadow-[#7e7ef1]/20 active:scale-98 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isUpdating ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteFromEdit}
+                    disabled={isUpdating}
+                    className="w-full py-2.5 rounded-xl font-bold text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 active:scale-98 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Tagihan Ini</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Category Picker Modal */}
       {isCategoryPickerOpen && (
@@ -424,13 +683,18 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
 
             <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto py-1">
               {selectableCategories.map((c: Category) => {
-                const isSelected = c.id === categoryId;
+                const currentSelectedId = pickerTarget === 'edit' ? editCategoryId : categoryId;
+                const isSelected = c.id === currentSelectedId;
                 return (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => {
-                      setCategoryId(c.id);
+                      if (pickerTarget === 'edit') {
+                        setEditCategoryId(c.id);
+                      } else {
+                        setCategoryId(c.id);
+                      }
                       setIsCategoryPickerOpen(false);
                     }}
                     className={clsx(
@@ -458,7 +722,7 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
       <CuteDatePickerModal
         isOpen={isDatePickerOpen}
         selectedDate={format(
-          new Date(2026, 0, Math.min(Math.max(executionDay, 1), 31)),
+          new Date(2026, 0, Math.min(Math.max(pickerTarget === 'edit' ? editExecutionDay : executionDay, 1), 31)),
           'yyyy-MM-dd'
         )}
         title="Pilih Tanggal Eksekusi"
@@ -467,7 +731,11 @@ export const AutomationView: React.FC<AutomationViewProps> = ({
           try {
             const parsed = parseISO(newDate);
             const day = parsed.getDate();
-            setExecutionDay(day);
+            if (pickerTarget === 'edit') {
+              setEditExecutionDay(day);
+            } else {
+              setExecutionDay(day);
+            }
           } catch {
             // fallback
           }

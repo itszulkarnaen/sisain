@@ -602,22 +602,6 @@ export default function Home() {
     }
   };
 
-  const handleToggleRecurringRule = async (ruleId: string, currentActive: boolean) => {
-    await db.recurringRules.update(ruleId, { is_active: !currentActive });
-    if (supabase && profile?.id && profile.id !== 'user-usep-default') {
-      void (async () => {
-        try {
-          await supabase
-            .from('recurring_rules')
-            .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
-            .eq('id', ruleId);
-        } catch (err) {
-          console.warn('Background sync recurring toggle deferred:', err);
-        }
-      })();
-    }
-  };
-
   const handleAddRecurringRule = async (data: {
     title: string;
     amount: number;
@@ -683,6 +667,52 @@ export default function Home() {
           await supabase.from('recurring_rules').delete().eq('id', ruleId);
         } catch (err) {
           console.warn('Background sync delete recurring rule deferred:', err);
+        }
+      })();
+    }
+  };
+
+  const handleUpdateRecurringRule = async (data: {
+    id: string;
+    title: string;
+    amount: number;
+    categoryId: string;
+    executionDay: number;
+    isActive?: boolean;
+  }) => {
+    const validCategoryId = LEGACY_CATEGORY_ID_MAP[data.categoryId] || data.categoryId;
+    const now = new Date().toISOString();
+    const updatePayload: Partial<RecurringRule> = {
+      title: data.title,
+      amount: data.amount,
+      category_id: validCategoryId,
+      execution_day: data.executionDay,
+      updated_at: now,
+    };
+    if (data.isActive !== undefined) {
+      updatePayload.is_active = data.isActive;
+    }
+
+    // Update lokal Dexie instan (<2ms)
+    await db.recurringRules.update(data.id, updatePayload);
+
+    // Non-blocking background sync ke Supabase
+    if (supabase && profile?.id && profile.id !== 'user-usep-default') {
+      void (async () => {
+        try {
+          await supabase
+            .from('recurring_rules')
+            .update({
+              title: data.title,
+              amount: data.amount,
+              category_id: validCategoryId,
+              execution_day: data.executionDay,
+              is_active: data.isActive,
+              updated_at: now,
+            })
+            .eq('id', data.id);
+        } catch (err) {
+          console.warn('Background sync update recurring rule deferred:', err);
         }
       })();
     }
@@ -942,8 +972,8 @@ export default function Home() {
               transactions={transactions}
               isProOrTrial={isProOrTrial}
               onLockedFeatureClick={() => setIsPaywallOpen(true)}
-              onToggleRule={handleToggleRecurringRule}
               onAddRule={handleAddRecurringRule}
+              onUpdateRule={handleUpdateRecurringRule}
               onDeleteRule={handleDeleteRecurringRule}
               onMarkAsPaid={(rule) => setRuleToMarkPaid(rule)}
             />
