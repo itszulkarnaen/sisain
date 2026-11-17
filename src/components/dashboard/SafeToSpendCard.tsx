@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Layers, Calendar, Banknote } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Layers, Calendar, Banknote, Eye, EyeOff } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { SafeToSpendSummary } from '@/types';
 
@@ -14,6 +14,24 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
   summary,
   onCardClick,
 }) => {
+  const [isMasked, setIsMasked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sisain_privacy_mask') === 'true';
+    }
+    return false;
+  });
+
+  const toggleMask = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMasked((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sisain_privacy_mask', String(next));
+      }
+      return next;
+    });
+  };
+
   const {
     freeCash,
     remainingSalary,
@@ -39,9 +57,21 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
 
       {/* Top Row: Label & Status Pill */}
       <div className="flex items-center justify-between mb-2 relative z-10">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-white/90">
-          <ShieldCheck className="w-4 h-4 text-[#a0dafd]" />
-          <span>Sisa Saldo Gaji</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-white/90">
+            <ShieldCheck className="w-4 h-4 text-[#a0dafd]" />
+            <span>Sisa Saldo Gaji</span>
+          </div>
+
+          {/* Privacy Sensor Eye Toggle */}
+          <button
+            type="button"
+            onClick={toggleMask}
+            title={isMasked ? 'Tampilkan Nominal' : 'Sembunyikan Nominal (Privasi)'}
+            className="p-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 text-white/80 hover:text-white transition cursor-pointer"
+          >
+            {isMasked ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
         {/* Status Indicator */}
@@ -88,7 +118,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold tracking-tight">
-                {formatRupiah(remainingSalary)}
+                {isMasked ? 'Rp ••••••••' : formatRupiah(remainingSalary)}
               </span>
             </div>
             <p className="text-[11px] text-white/80 mt-0.5 font-medium">
@@ -107,7 +137,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
             <span>Total Ter-budget</span>
           </div>
           <p className="text-sm font-extrabold text-white mt-1">
-            {hasSalary ? formatRupiah(totalCommitted) : '-'}
+            {hasSalary ? (isMasked ? 'Rp ••••••' : formatRupiah(totalCommitted)) : '-'}
           </p>
           <span className="text-[9px] text-white/70 mt-0.5">
             {hasSalary ? `${budgetAllocatedPercentage}% dari gaji` : '0 pos'}
@@ -121,7 +151,7 @@ export const SafeToSpendCard: React.FC<SafeToSpendCardProps> = ({
             <span>Uang di Luar Budget</span>
           </div>
           <p className="text-sm font-extrabold text-white mt-1">
-            {hasSalary ? formatRupiah(freeCash) : '-'}
+            {hasSalary ? (isMasked ? 'Rp ••••••' : formatRupiah(freeCash)) : '-'}
           </p>
         </div>
       </div>

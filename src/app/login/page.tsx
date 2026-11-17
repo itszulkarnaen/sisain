@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function LoginPage() {
@@ -296,7 +296,22 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Footer: Guest Mode */}
+        {/* Security & Privacy Guarantee */}
+        <div className="relative z-10 p-3 rounded-2xl bg-white/90 border border-slate-200/90 shadow-2xs flex items-center gap-2.5 text-left">
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 text-emerald-600 shadow-2xs">
+            <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-800 leading-tight">
+              Keamanan Data & Privasi Terisolasi
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+              Enkripsi data transit TLS & rest AES-256. Dilindungi Row-Level Security (RLS) PostgreSQL & penyimpanan offline-first di perangkatmu.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
         <div className="relative z-10 text-center pb-2 space-y-2">
           <p className="text-[10px] text-slate-400">
             &copy; 2026 sisa.in &bull; Dibuat untuk pekerja 9-to-5 mengelola keuangan dengan bijak.
