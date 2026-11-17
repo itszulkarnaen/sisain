@@ -1,10 +1,22 @@
-const CACHE_NAME = 'sisain-v2';
+const CACHE_NAME = 'sisain-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/sisain.png',
   '/icon-192.png',
   '/icon-512.png',
+  '/pics/boy.png',
+  '/pics/girl.png',
+  '/qr_pembayaran.jpg',
+  '/category/makan_minum.png',
+  '/category/kopi.png',
+  '/category/transport.png',
+  '/category/belanja.png',
+  '/category/kosan.png',
+  '/category/hiburan.png',
+  '/category/tak_terduga.png',
+  '/category/gaji.png',
+  '/category/side_husle.png',
 ];
 
 self.addEventListener('install', (event) => {
