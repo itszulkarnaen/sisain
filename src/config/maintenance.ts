@@ -9,7 +9,7 @@
  */
 
 export const MAINTENANCE_CONFIG = {
-  enabled: true, // Set ke false jika maintenance database/fitur sudah beres
+  enabled: false, // Set ke false jika maintenance database/fitur sudah beres
   title: 'Sedang Ada Pembaruan Sistem',
   subtitle: 'Kami sedang melakukan pemeliharaan database & peningkatan enkripsi keamanan untuk melindungi privasi finansialmu.',
   estimatedTime: 'Segera (Hari Ini)',
