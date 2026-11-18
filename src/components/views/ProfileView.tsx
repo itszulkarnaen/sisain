@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import {
   ArrowLeft,
@@ -15,8 +15,10 @@ import {
   ChevronRight,
   CheckCircle2,
   Smartphone,
+  KeyRound,
 } from 'lucide-react';
 import { Profile } from '@/types';
+import { ChangePasswordModal } from '@/components/profile/ChangePasswordModal';
 import { formatRupiah } from '@/lib/utils/currency';
 import { getPaydayCycle } from '@/lib/utils/payday';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
@@ -58,6 +60,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const isUsingGoogleAvatar = Boolean(
     googleAvatarUrl && currentAvatar === googleAvatarUrl
   );
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   return (
     <div className="space-y-4 pb-28 pt-1 animate-in fade-in duration-200">
@@ -275,6 +278,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <span>Ubah Profil, Gaji & Tanggal Gajian</span>
         </button>
 
+        <button
+          type="button"
+          onClick={() => setIsChangePasswordOpen(true)}
+          className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:border-[#7e7ef1] hover:text-[#7e7ef1] text-xs font-bold text-slate-700 shadow-xs active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <KeyRound className="w-4 h-4 text-[#7e7ef1]" />
+          <span>Ganti Password Akun</span>
+        </button>
+
         {onOpenPwaGuide && (
           <button
             type="button"
@@ -297,6 +309,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
         )}
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        userEmail={profile?.email}
+      />
     </div>
   );
 };

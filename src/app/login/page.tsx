@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle, ShieldCheck, Eye, EyeOff, KeyRound, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { isMaintenanceActive } from '@/config/maintenance';
 
@@ -14,9 +14,17 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Forgot Password State
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetError, setResetError] = useState('');
 
   // Check if already logged in or guest
   useEffect(() => {
@@ -113,6 +121,41 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMessage(msg);
       setLoading(false);
+    }
+  };
+
+  const handleSendResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+
+    if (!resetEmail) {
+      setResetError('Silakan masukkan email kamu.');
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setResetError('Layanan autentikasi belum terkonfigurasi.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) throw error;
+
+      setResetSuccess(
+        'Tautan reset password berhasil dikirim! Silakan periksa kotak masuk atau spam email kamu.'
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setResetError(msg);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -235,11 +278,27 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-slate-600 block">Password</label>
+                {!isRegister && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetEmail(email || '');
+                      setResetError('');
+                      setResetSuccess('');
+                      setIsForgotPasswordOpen(true);
+                    }}
+                    className="text-[11px] font-bold text-[#7e7ef1] hover:text-[#5555dc] transition cursor-pointer"
+                  >
+                    Lupa Password?
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 focus-within:border-indigo-500 bg-white">
                 <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Minimal 6 karakter"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -247,6 +306,15 @@ export default function LoginPage() {
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-slate-400 hover:text-slate-600 transition p-0.5 shrink-0 cursor-pointer focus:outline-hidden"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -322,6 +390,90 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotPasswordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 relative">
+            <button
+              type="button"
+              onClick={() => setIsForgotPasswordOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-[#7e7ef1]/10 text-[#7e7ef1] flex items-center justify-center mb-4">
+              <KeyRound className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              Lupa Password?
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed mb-4">
+              Masukkan email yang terdaftar pada akun sisa.in kamu. Kami akan mengirimkan tautan untuk mengatur ulang password.
+            </p>
+
+            {resetError && (
+              <div className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2 text-xs text-rose-700">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {resetSuccess && (
+              <div className="mb-3.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-xs text-emerald-700">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            {!resetSuccess ? (
+              <form onSubmit={handleSendResetPassword} className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Email Akun</label>
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 focus-within:border-indigo-500 bg-white">
+                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                    <input
+                      type="email"
+                      placeholder="usep@kantor.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="w-full bg-transparent outline-hidden text-xs font-medium text-slate-900"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPasswordOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 transition cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-[#7e7ef1] hover:bg-[#6c6ce8] text-white text-xs font-bold shadow-md shadow-[#7e7ef1]/25 transition cursor-pointer disabled:opacity-60"
+                  >
+                    {resetLoading ? 'Mengirim...' : 'Kirim Tautan'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition cursor-pointer"
+              >
+                Tutup
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
