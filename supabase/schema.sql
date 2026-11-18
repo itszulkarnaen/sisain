@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT,
   full_name TEXT,
   avatar_url TEXT,
-  monthly_salary NUMERIC(15, 2) DEFAULT 0 CHECK (monthly_salary >= 0),
+  -- monthly_salary disimpan terenkripsi (ALFE AES-GCM) format 'enc_v1:<base64>'
+  monthly_salary TEXT DEFAULT '0',
   payday_date INT DEFAULT 25 CHECK (payday_date BETWEEN 1 AND 31),
   subscription_status TEXT DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL', 'ACTIVE', 'EXPIRED')),
   trial_ends_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),

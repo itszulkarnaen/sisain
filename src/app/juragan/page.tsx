@@ -607,9 +607,18 @@ export default function JuraganPage() {
 
                         {/* Gaji & Siklus Column */}
                         <td className="py-3.5 px-4 text-slate-300">
-                          <p className="font-semibold text-slate-200">
-                            {user.monthly_salary > 0 ? formatRupiah(user.monthly_salary) : 'Belum diatur'}
-                          </p>
+                          <div className="font-semibold text-slate-200">
+                            {typeof (user.monthly_salary as unknown) === 'string' &&
+                            (user.monthly_salary as unknown as string).startsWith('enc_v1:') ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-400 font-medium text-xs bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-800/40">
+                                <Lock className="w-3 h-3" /> Terenkripsi (ALFE)
+                              </span>
+                            ) : Number(user.monthly_salary) > 0 ? (
+                              formatRupiah(Number(user.monthly_salary))
+                            ) : (
+                              'Belum diatur'
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             Gajian tiap tgl {user.payday_date || 25}
                           </p>

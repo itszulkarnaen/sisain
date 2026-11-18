@@ -27,6 +27,7 @@ import { ProfileView } from '@/components/views/ProfileView';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { DesktopNoticeBanner } from '@/components/common/DesktopNoticeBanner';
 import { isMaintenanceActive } from '@/config/maintenance';
+import { encryptSalary, decryptSalary } from '@/lib/crypto/salaryCipher';
 import { formatRupiah } from '@/lib/utils/currency';
 import { TransactionType, Transaction, Profile, Category, RecurringRule, Budget } from '@/types';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
@@ -144,13 +145,29 @@ export default function Home() {
         let finalProfile: Profile;
 
         if (remoteProfile) {
+          const decryptedSalary = await decryptSalary(remoteProfile.monthly_salary, user.id);
+
           finalProfile = {
             ...remoteProfile,
+            monthly_salary: decryptedSalary,
             full_name: (remoteProfile.full_name && remoteProfile.full_name !== 'Pengguna Baru' && remoteProfile.full_name !== 'Usep')
               ? remoteProfile.full_name
               : userFullName,
             avatar_url: remoteProfile.avatar_url || userAvatar || '/pics/boy.png',
           };
+
+          // Auto-migrate unencrypted legacy salary in Supabase to encrypted format
+          if (
+            typeof remoteProfile.monthly_salary === 'number' ||
+            (typeof remoteProfile.monthly_salary === 'string' && !remoteProfile.monthly_salary.startsWith('enc_v1:'))
+          ) {
+            void (async () => {
+              try {
+                const encSalary = await encryptSalary(decryptedSalary, user.id);
+                await supabase.from('profiles').update({ monthly_salary: encSalary }).eq('id', user.id);
+              } catch {}
+            })();
+          }
 
           if (finalProfile.full_name !== remoteProfile.full_name || finalProfile.avatar_url !== remoteProfile.avatar_url) {
             await supabase
@@ -163,6 +180,7 @@ export default function Home() {
               .eq('id', user.id);
           }
         } else {
+          const encryptedZeroSalary = await encryptSalary(0, user.id);
           finalProfile = {
             id: user.id,
             email: userEmail,
@@ -177,7 +195,13 @@ export default function Home() {
             updated_at: new Date().toISOString(),
           };
 
-          await supabase.from('profiles').upsert(finalProfile, { onConflict: 'id' });
+          await supabase.from('profiles').upsert(
+            {
+              ...finalProfile,
+              monthly_salary: encryptedZeroSalary,
+            },
+            { onConflict: 'id' }
+          );
 
           await supabase.from('wallets').upsert(
             { user_id: user.id, name: 'Dompet Utama', is_default: true },
@@ -827,9 +851,13 @@ export default function Home() {
       if (supabase && profileId !== 'user-usep-default') {
         void (async () => {
           try {
+            const encryptedSalary = await encryptSalary(data.monthlySalary, profileId);
             await supabase
               .from('profiles')
-              .update(updateData)
+              .update({
+                ...updateData,
+                monthly_salary: encryptedSalary,
+              })
               .eq('id', profileId);
           } catch (err) {
             console.warn('Background sync profile to Supabase deferred:', err);
