@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sisain-v3';
+const CACHE_NAME = 'sisain-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

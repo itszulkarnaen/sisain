@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { Lock, Mail, User, ArrowRight, Sparkles, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
 import { clsx } from 'clsx';
+import { isMaintenanceActive } from '@/config/maintenance';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function LoginPage() {
 
   // Check if already logged in or guest
   useEffect(() => {
+    if (isMaintenanceActive()) return;
+
     if (typeof window !== 'undefined') {
       const isGuest = localStorage.getItem('sisain_guest') || localStorage.getItem('ninetopay_guest');
       if (isGuest === 'true') {

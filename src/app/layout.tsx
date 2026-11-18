@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { MaintenanceGuard } from "@/components/common/MaintenanceGuard";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,7 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 selection:bg-[#7e7ef1] selection:text-white`}
       >
         <ServiceWorkerRegister />
-        {children}
+        <MaintenanceGuard>{children}</MaintenanceGuard>
       </body>
     </html>
   );

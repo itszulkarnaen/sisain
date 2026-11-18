@@ -26,6 +26,7 @@ import { ReportsView } from '@/components/views/ReportsView';
 import { ProfileView } from '@/components/views/ProfileView';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { DesktopNoticeBanner } from '@/components/common/DesktopNoticeBanner';
+import { isMaintenanceActive } from '@/config/maintenance';
 import { formatRupiah } from '@/lib/utils/currency';
 import { TransactionType, Transaction, Profile, Category, RecurringRule, Budget } from '@/types';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
@@ -87,6 +88,11 @@ export default function Home() {
     let isMounted = true;
 
     async function checkAuthAndSync() {
+      if (isMaintenanceActive()) {
+        if (isMounted) setAuthChecking(false);
+        return;
+      }
+
       if (typeof window !== 'undefined') {
         const isGuest = localStorage.getItem('sisain_guest') || localStorage.getItem('ninetopay_guest');
         if (isGuest === 'true') {
